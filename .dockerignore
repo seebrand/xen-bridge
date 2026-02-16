@@ -1,0 +1,17 @@
+.git
+.DS_Store
+.ipynb_checkpoints
+__pycache__
+src/gamedb.*
+.vscode
+install/
+scripts/
+training/
+models/eamon
+src/db
+demo/
+models/
+src/Eastdb.*
+src/Westdb.*
+src/Northdb.*
+src/Southdb.*

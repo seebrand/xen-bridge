@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <title>Bridge Engine Demo</title>
+    <script src="log.js"></script> 
+    <link rel="stylesheet" href="viz.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
+</head>
+
+<body>
+    <h1>Bridge Engine Demo</h1>
+    <p>This is a demo of how the bridge engine bids and plays.</p>
+    <p>Clicking on the link you will see a detailed view of the bidding and play, what options the bots considered at each point,
+    and what they "thought" the hidden hands might look like.<br>
+    <br>The 160 deals are from Camrose Trophy 2024 - First weekend, played by BEN in open and closed room.
+    </p>
+
+    <div id="boards" class="content-wrapper"></div>
+
+    <script>
+        var html = '';
+        for (var deal_i = 0; deal_i < data.length; deal_i++) {
+            html += '<span class="link"><a class="example" target="_blank" href="viz.html?deal=' + (deal_i + 1) + ('">Board:' + data[deal_i]['board_number']).padStart(3)+ "&nbsp;" + data[deal_i]['contract'] + '</a>&nbsp;&nbsp;</span>'
+        }
+        document.querySelector('#boards').innerHTML = html;
+    </script>
+</body>
+
+</html>

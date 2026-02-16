@@ -1,0 +1,126 @@
+.DS_Store
+.ipynb_checkpoints
+__pycache__
+
+scripts/match/bidding/training/html
+scripts/training/bidding/binary
+.vscode
+install/build
+install/dist/config
+install/dist/models
+install/dist/*.exe
+install/dist/gamedb.*
+install/venv
+install/dist/Championships- BEN v WBridge5.pbn
+models/eamon
+scripts/match/bidding/eamon
+scripts/training/playing/*_bin
+scripts/training/playing/playing_data/Jack
+scripts/training/playing/*_model
+scripts/training/bidding/bidding_bin
+scripts/training/bidding/model
+scripts/training/playing/lead_model_b
+scripts/training/playing/models
+scripts/training/bidding/bidding_info_bin
+scripts/training/bidding/models
+scripts/training/bidding/binfo2
+scripts/training/playing/bw5c_info.zip
+scripts/training/bidding/bw5c.zip
+scripts/training/bidding/test4.py
+install/dist/2nt.pbn
+scripts/training/opening lead/data
+scripts/training/opening lead/models
+scripts/training/opening lead/lead_bin
+scripts/training/opening lead/lead_model_b
+models/lead_model_c
+models/lead_model
+Boards/*.sql
+Boards/*.exe
+Boards/data
+Boards/All.PBN
+scripts/training/bidding/binfo_bin
+scripts/training/*/model
+scripts/training/**/*.npy
+scripts/match/bidding/0.*
+scripts/training/**/*.out
+scripts/training/data/input-17-11*
+
+src/hfmodels
+src/**/*.bak
+src/**/*.dir
+src/**/*.dat
+scripts/training/**/*BEN99*
+
+scripts/training/data/*BBA*.zip
+scripts/training/data/5 mill deals with bidding.zip
+fly.io
+scripts/training/bidding/auctions.txt
+UCBC 2024/2024 Practice
+UCBC 2024/Boards/input.bba
+scripts/training/data/BBA*.txt
+Boards/BBA/Random 100.000-rotated.pbn
+scripts/training/data/WBC/play_ben.zip
+scripts/training/data/WBC/play_jackformat.zip
+scripts/training/data/input-2024.02.12.txt
+Boards/*.bba
+Boards/BBA/TMPbn2Cleaner.exe
+scripts/training/data/WBC/play.txt
+scripts/match/bidding/default
+scripts/training/data/*.bba
+scripts/training/data/*.pbn
+scripts/training/data/*.ben
+gamedb*
+install/**/*.bak
+install/**/*.dir
+install/**/*.dat
+install/dist/table_manager_client.zip
+scripts/training/bidding/sampling_1000.prt
+scripts/training/bidding/html/*.html
+src/frontend/api.json
+src/CBE*.*
+src/GIB.*
+Boards/Thorvald/random.pbn
+Boards/Thorvald/BBA - 25.05.2024 14.08.ben
+Boards/Thorvald/issues.bba
+src/SuitC.pbn
+src/Suic.Pbn
+models/muppet/512/bidding_V2-1100000*
+gameapibiddb*
+scripts/training/**/logs/
+scripts/training/bidding/sampling*.ben
+**/*.keras
+!models/TF2models/*.keras
+stats.txt
+scripts/training/bidding/keras/stats.txt
+scripts/match/bidding/speed/
+scripts/training/bidding/bad.*
+src/logs/app.log
+src/input.ben
+Boards/*.ben
+Boards/*.pbn
+scripts/training/bidding/Old versions/
+src/logs/
+scripts/training/data/hands_data.pkl
+src/test.py
+BBA/Boards
+install/dist
+install/BEN
+install/MvsM
+install/BBA/
+install/*.zip
+src/TMCGUI.settings.json
+install/BENAll
+src/log.txt
+scripts/training/contract/jax
+src/suitc.txt
+BBA/CC/*.txt
+BBA/output*
+Challenges/Match
+src/deal00.txt
+src/lop00.txt
+Challenges/EDGAR
+BBA/*.pbn
+Practice
+.venv
+uv.lock
+.python-version

@@ -1,0 +1,341 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8">
+
+  <title>Analyze Deal</title>
+
+  <link rel="stylesheet" href="viz.css">
+  <script src="viz.js"></script>  
+  <script src="samplesTable.js"></script>
+
+</head>
+
+<body>
+  
+  <div id="dealdiv">
+
+  <div id="dealer-vuln"></div>
+
+  <div id="north">
+      <div class="suit">
+          <span>&spades;</span>
+      </div>
+      <div class="suit">
+          <span class="font-red">&hearts;</span>
+      </div>
+      <div class="suit">
+          <span class="font-red">&diams;</span>
+      </div>
+      <div class="suit">
+          <span>&clubs;</span>
+      </div>
+  </div>
+  <div id="west">
+      <div class="suit">
+          <span>&spades;</span>
+      </div>
+      <div class="suit">
+          <span class="font-red">&hearts;</span>
+      </div>
+      <div class="suit">
+          <span class="font-red">&diams;</span>
+      </div>
+      <div class="suit">
+          <span>&clubs;</span>
+      </div>
+  </div>
+  <div id="table">
+    <div class="north">
+        BEN
+    </div>
+    <div class="west">
+        BEN
+    </div>
+    <div class="south">
+        BEN
+    </div>
+    <div class="east">
+        BEN
+    </div>
+  </div>
+  <div id="east">
+      <div class="suit">
+          <span>&spades;</span>
+      </div>
+      <div class="suit">
+          <span class="font-red">&hearts;</span>
+      </div>
+      <div class="suit">
+          <span class="font-red">&diams;</span>
+      </div>
+      <div class="suit">
+          <span>&clubs;</span>
+      </div>
+  </div>
+  <div id="feedback"></div>
+  <div id="south">
+      <div class="suit">
+          <span>&spades;</span>
+      </div>
+      <div class="suit">
+          <span class="font-red">&hearts;</span>
+      </div>
+      <div class="suit">
+          <span class="font-red">&diams;</span>
+      </div>
+      <div class="suit">
+          <span>&clubs;</span>
+      </div>
+  </div>
+  <div id="model"></div>
+
+  <div id="auction"></div>
+  <div id="boardno"></div>
+
+  <div id="current-trick">
+  <div id="trick-card-north" class="trick-card"></div>
+  <div id="trick-card-east" class="trick-card"></div>
+  <div id="trick-card-south" class="trick-card"></div>
+  <div id="trick-card-west" class="trick-card"></div>
+  </div>
+
+
+  <div id="tricks-ns-ew">
+  <div id="tricks-ns" class="trick-count"><span>0</span></div>
+  <div id="tricks-ew" class="trick-count"><span>0</span></div>
+  </div>
+
+  <div id="btn-start" class="button">&gt;&gt;&gt;</div>
+  <div id="btn-start-play" class="button">&lt;&lt;</div>
+  <div id="btn-prev" class="button">&lt;</div>
+  <div id="btn-next" class="button">&gt;</div>
+
+  </div>
+
+  <div id="rebid"></div>
+  <div id="replay"></div>
+  <div id="solver"></div>
+
+  <div><a href="/home/xen">返回</a></div>
+
+  <div id="info"></div>
+
+  <script>
+
+            const urlParams = new URLSearchParams(location.search)
+                const dealId = urlParams.get("deal")
+
+                const xhr = new XMLHttpRequest()
+                xhr.open("GET", "/api/deals/" + dealId)
+                xhr.send()
+                xhr.onreadystatechange = function (event) {
+                    if (xhr.readyState === 4) {
+                        if (xhr.status === 200) {
+                            try {
+                                const log = JSON.parse(xhr.responseText);
+                                let deal = new Deal(log)
+                                deal.start(deal.bids)
+                                if (deal.data.opponents) {
+                                    if (deal.data.seat == "North"  || deal.data.seat == "South") {
+                                        document.querySelector('.north').innerHTML = deal.data.partner
+                                        document.querySelector('.south').innerHTML = deal.data.partner
+                                        document.querySelector('.east').innerHTML = deal.data.opponents
+                                        document.querySelector('.west').innerHTML = deal.data.opponents
+                                    }
+                                    else {
+                                        document.querySelector('.north').innerHTML = deal.data.opponents
+                                        document.querySelector('.south').innerHTML = deal.data.opponents
+                                        document.querySelector('.east').innerHTML = deal.data.partner
+                                        document.querySelector('.west').innerHTML = deal.data.partner
+                                    }
+                                }
+                                if (deal.data.human) {
+                                    if (deal.data.human[0]) document.querySelector('.north').innerHTML = deal.data.player
+                                    if (deal.data.human[1]) document.querySelector('.east').innerHTML = deal.data.player
+                                    if (deal.data.human[2]) document.querySelector('.south').innerHTML = deal.data.player
+                                    if (deal.data.human[3]) document.querySelector('.west').innerHTML = deal.data.player
+                                }
+                                if (deal.data.feedback) {
+                                    document.querySelector('#feedback').innerHTML = deal.data.feedback
+                                }
+                                if (deal.data.model) {
+                                    document.querySelector('#model').innerHTML = deal.data.model
+                                }
+                                if (deal.data.version) {
+                                    document.querySelector('#model').innerHTML += "<br>" +deal.data.version
+                                }
+                                document.getElementById("boardno").innerHTML=deal.board_number()
+                                let auction = new Auction(log['dealer'], log['bids'])
+                                auction.render(document.getElementById("auction"))
+                                let dealerVuln = new DealerVuln(log['dealer'], log['vuln_ns'], log['vuln_ew'])
+                                dealerVuln.render(document.getElementById("dealer-vuln"))
+                                let vul = 'None'
+                                if (deal.data.vuln_ns) {
+                                    if (deal.data.vuln_ew) {
+                                        vul = "Both";
+                                        vulSolver = "All";
+                                    } else {
+                                        vul = 'N-S';
+                                        vulSolver = "NS";
+                                    }
+                                } else if (deal.data.vuln_ew) {
+                                        vul = "E-W";
+                                        vulSolver = "EW";
+                                    } else {
+                                        vul = 'None';
+                                        vulSolver = "None";
+                                    }
+
+                                let dealer = 'NESW'.charAt(deal.data.dealer)
+                                let rebidContent = '<a href="/app/bridge.html?deal=' +
+                                    '(\'' + deal.data.hands + '\', \'' + dealer + ' ' + vul + '\')' +
+                                    '&P=1&board_no=' + deal.board_number() + '&A=x&T=2&V=x"> AI重打</a><br>';
+                                rebidContent += '<a href="/app/bridge.html?deal=' +
+                                    '(\'' + deal.data.hands + '\', \'' + dealer + ' ' + vul + '\')' +
+                                    '&P=1&board_no=' + deal.board_number() + '&S=x&A=x&T=2&name=xen"> 复盘重打</a><br>';
+
+                                document.querySelector('#rebid').innerHTML = rebidContent;
+
+                                const replayContent = '<a href="/app/bridge.html?deal=' +
+                                    '(\'' + deal.data.hands + '\', \'' + dealer + ' ' + vul + ' ' + auction.auctionString +'\')' +
+                                    '&P=5&board_no=' + deal.board_number() + '&A=x&T=2&V=x"> 不叫牌重打 </a><br>';
+
+                                document.querySelector('#replay').innerHTML = replayContent;
+
+                                var hands = deal.data.hands.split(' ')
+                                const solverContent = '<a href="https://dds.bridgewebs.com/bsol2/ddummy.htm?board=' + deal.board_number()  +
+                                    '&dealer=' + dealer + 
+                                    '&vul=' + vulSolver + '&club=BEN' +
+                                    '&North=' + hands[0] +
+                                    '&East=' + hands[1] +
+                                    '&South=' + hands[2] +
+                                    '&West=' + hands[3] +
+                                    '" target=blank> 双明手结果</a><br>';
+
+
+                                document.querySelector('#solver').innerHTML = solverContent;
+
+                                let bids = 0
+                                log['bids'].forEach(data => {
+                                    document.querySelector('#info').innerHTML += `
+                                        <p class="bid"><strong>Bid:</strong> ${data.bid}${data.alert=="True"? "*":""} ${data.who !== undefined? ' by ' + data.who : ''} ${data.explanation !== undefined ? data.explanation : ''}</p>
+                                        `;
+                                    if (data.candidates && data.candidates.length > 0)
+                                        document.querySelector('#info').innerHTML += `
+                                            <p><strong>Candidates:</strong>
+                                            <ul>
+                                                ${data.candidates.map(candidate => `
+                                                    <li>
+                                                        Bid: ${candidate.call.replace("PASS","P").padStart(2, ' ')},
+                                                        ${candidate.expected_score !== undefined ? `Expected score: ${candidate.expected_score},` : ''}
+                                                        ${candidate.expected_mp !== undefined ? `Expected MP: ${candidate.expected_mp},` : ''}
+                                                        ${candidate.expected_imp !== undefined ? `Expected IMP: ${candidate.expected_imp},` : ''}
+                                                        ${candidate.insta_score !== undefined ? `NN Score: ${candidate.insta_score},` : ''}
+                                                        ${candidate.adjustment !== undefined ? `Adjusted: ${candidate.adjustment}` : ''}
+                                                    </li>                               
+                                                `).join('')}
+                                            </ul></p>
+                                            `;
+                                    if (data.hcp && (data.hcp != -1)) {
+                                        let formattedShape = [];
+                                        for (let i = 0; i < data.shape.length; i += 4) {
+                                            formattedShape.push(data.shape.slice(i, i + 4).join('-'));
+                                        }
+                                        formattedShape = formattedShape.join(' &nbsp;&nbsp; ');                                    
+                                        document.querySelector('#info').innerHTML += `
+                                            <p><strong>HCP:</strong> ${data.hcp.join(' - ')}</p>
+                                            <p><strong>Shape:</strong> ${formattedShape}</p>
+                                            `;
+                                        if (data.quality != null) {
+                                            document.querySelector('#info').innerHTML += `
+                                            <p><strong>Sample quality: </strong>${data.quality}</p>
+                                            `;
+                                        }
+                                    }
+                                    if ("samples" in data) {
+                                        document.querySelector('#info').innerHTML += generateSamplesTable(data.samples, bids);
+                                        bids = +1
+                                    }
+                                    }
+                                );
+
+                                document.getElementById("btn-next").addEventListener("click", function () {
+                                    deal.next()
+                                })
+
+                                document.getElementById("btn-prev").addEventListener("click", function () {
+                                    deal.prev()
+                                })
+
+                                document.getElementById("btn-start").addEventListener("click", function () {
+                                    deal.start()
+                                })
+
+                                document.getElementById("btn-start-play").addEventListener("click", function () {
+                                    deal.start()
+                                })
+
+
+                            } catch (error) {
+                                console.log(xhr.responseText)
+                                console.log('An error occurred while parsing the JSON:', error);
+                            }
+                        } else {
+                            console.error('Request failed with status:', xhr.status);
+                        }
+                    }
+                }
+
+                function BENGetXY(obj) {
+            var pt = {x: 0, y: 0};
+            var div = document.getElementById("bccontent");
+            if (div)
+                pt.y = -div.offsetTop;
+
+            while (obj) {
+                pt.x += obj.offsetLeft;
+                pt.y += obj.offsetTop;
+                obj = obj.offsetParent;
+            }
+            return pt;
+        }
+        function BENShowPopup(obj, text, pos) {
+            var div = document.getElementById("BENPopup");
+            text = text.replace(/\&/g,"&amp;");
+            text = text.replace(/\</g,"&lt;");
+            div.innerHTML = text.replace(/\|/g,"<br/>");
+            var pt = BENGetXY(obj);
+            switch (pos) {
+            case 0:		// right
+                div.style.left = pt.x + obj.offsetWidth + 8 + "px";
+                div.style.top = pt.y + "px";
+                break;
+            case 1:		// above
+                div.style.left = pt.x + 8 + "px";
+                div.style.top = pt.y - div.offsetHeight + "px";
+                break;
+            case 2:		// left
+                var x = pt.x - div.offsetWidth;
+                if (x < 0) x = 0;
+                div.style.left = x + "px";
+                div.style.top = pt.y + "px";
+                break;
+            case 3:		// below
+                div.style.left = pt.x + 8 + "px";
+                div.style.top = pt.y + obj.offsetHeight + "px";
+                break;
+            }
+            div.style.visibility = "visible";
+        }
+        function BENHidePopup() {
+            var div = document.getElementById("BENPopup");
+            div.style.visibility = "hidden";
+        }
+    </script>
+    <div id=BENPopup style="position: absolute; color: black; background-color: #ffffe1; border: thin solid black; text-align: left; padding-left: 4px; padding-right: 4px; font: small 'Arial', sans-serif; visibility: hidden"></div>
+
+
+</body>
+</html>

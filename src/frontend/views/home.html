@@ -1,0 +1,385 @@
+<!DOCTYPE html>
+<html lang="en">
+
+	<head> 
+    <meta charset="utf-8">
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="Expires" content="0">
+		<title>XEN - 桥牌大模型引擎</title>
+     <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        .center {
+            text-align: center;
+            padding: 20px;
+        }
+        .container {
+            max-width: 800px;
+            margin: 20px auto;
+            padding: 20px;
+            background-color: #f9f9f9;
+            border-radius: 8px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+        }
+        .border {
+            border: 1px solid #ddd;
+            padding: 10px;
+            margin-bottom: 20px;
+            border-radius: 4px;
+        }
+        form label {
+            display: block;
+            margin-bottom: 5px;
+        }
+        form input[type="text"],
+        form textarea,
+        form select {
+            width: calc(100% - 22px);
+            padding: 8px;
+            margin-bottom: 10px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+        }
+        form button {
+            padding: 10px 15px;
+            background-color: #007BFF;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        form button:hover {
+            background-color: #0056b3;
+        }
+        .content {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 20px;
+        }
+        .inner-div {
+            flex: 1;
+            min-width: 200px;
+        }
+        ul {
+            list-style-type: none;
+            padding: 0;
+        }
+        li {
+            margin-bottom: 10px;
+        }
+        @media (max-width: 768px) {
+            .content {
+                flex-direction: column;
+            }
+        }
+    </style>
+        <link rel="stylesheet" href="/app/all.min.css">
+        <link rel="stylesheet" href="/app/style.css">
+	    <script src="/app/jquery.min.js"></script>		
+    <script>
+        var formerror = false
+        const my_name = {{username}}
+        function copyToClipboard(idx) {
+        const bbaText = document.getElementById('bbaText'+idx);
+        const text = bbaText.textContent.trim();
+
+        const el = document.createElement('textarea');
+        el.value = text;
+        document.body.appendChild(el);
+        el.select();
+        document.execCommand('copy');
+        document.body.removeChild(el);
+        formerror = false
+        // You can add a message or any other functionality after copying
+        alert('Copied to clipboard: ' + text);
+        }
+    
+        function validateForm(name) {
+            formerror = false
+            var textareaValue = document.getElementById(name).value.trim();
+            if (textareaValue === "") {
+                alert("请输入名称.");
+                formerror = true
+                return false; // Prevent form submission
+            }
+            return true; // Allow form submission
+        }
+
+        function getRandomInt(min, max) {
+            return Math.floor(Math.random() * (max - min + 1)) + min;
+        }
+
+        function displayRandomInt() {
+            var randomInt = getRandomInt(1, 10000); // 生成1到10000之间的随机整数
+            document.getElementsByName("board")[0].value = randomInt;
+            document.getElementsByName("board")[1].value = randomInt;
+
+            // document.getElementsByName("name")[0].value = my_name;
+
+        }
+
+        </script>
+	</head> 
+<body onload="displayRandomInt()">
+
+<div class="container {{ 'hidden' if play else '' }}">
+  <div class="content">
+   <div class="border">
+    <form id="form5">
+        <label for="board">随机牌号:</label>
+        <input type="text" name="board">
+        <button type="submit" class="submit-button" data-form="form5" onclick="return validateForm('board')">自由PK</button>
+    </form>
+    </div>
+    <div class="border">
+    <form id="form1">
+        <label for="board">牌号:</label>
+        <input type="text" name="board"><br>
+        <label for="dealer">发牌:</label>
+        <select id="dealer" name="dealer">
+            <option value="N">North</option>
+            <option value="S">South</option>
+            <option value="E">East</option>
+            <option value="W">West</option>
+        </select><br>
+        <label for="vulnerable">局况:</label>
+        <select id="vulnerable" name="vulnerable">
+            <option value="None">None</option>
+            <option value="N-S">NS</option>
+            <option value="E-W">EW</option>
+            <option value="Both">Both</option>
+        </select><br>
+        <label for="deal">Deal in this format: <br>J2.QJ53.T8754.84 64.K62.Q62.AJT65 KQ985.A.A93.K732 AT73.T9874.KJ.Q9</label><br>
+        <textarea id="deal" name="dealtext" cols="40"></textarea><br>
+        <button type="submit" class="submit-button" data-form="form1" onclick="return validateForm(event, 'deal')">输入牌型PK</button>
+    </form>
+    </div>
+    </div>
+
+
+</div>
+
+<div class="container">
+  <h2>系统设置</h2>
+
+  <div class="content">
+    <div class="inner-div">
+    <label for="name">用户名:</label>
+    <input type="text" id="name" data-default="true" value="{{username}}"><br>
+    您的座位: <br>
+    <input type="checkbox" id="N" data-default="false"><label for="N">North</label>
+    <input type="checkbox" id="E" data-default="false"><label for="E">East</label>
+    <input type="checkbox" id="S" data-default="true"><label for="S">South</label>
+    <input type="checkbox" id="W" data-default="false"><label for="W">West</label><br>
+    <input type="checkbox" id="M" data-default="false"><label for="matchpoint">Matchpoint</label><br>
+
+    </div>
+    <div class="inner-div" >
+   其他选项: <br>
+    <input type="checkbox" id="H" data-default="true"><label for="H">可以声称</label><br>
+    <input type="checkbox" id="V" data-default="false"><label for="H">一直显示</label><br>
+    <input type="checkbox" id="R" data-default="false"><label for="H">旋转牌局</label><br>
+    </div>
+    <div class="inner-div" >
+    自动设置<br>
+    <input type="checkbox" id="A" data-default="true"><label for="T">自动出牌
+    <select id="T">
+        <option value="0">0</option>
+        <option value="1">1</option>
+        <option value="2" selected>2</option>
+        <option value="5">5</option>
+        <option value="10">10</option>
+    </select>
+    seconds</label><br>
+    <input type="checkbox" id="C" data-default="false"><label for="C">自动继续</label><br>
+  </div>
+</div>
+</div>
+<div class="container">
+  <h2>我的比赛</h2>
+    <li title="比赛中" >
+        <span><a href="/app/bridge.html?board_no=5&S=x&H=x&A=x&name=zwl&T=1&C=x&V=x">PK机器人</a></span><br>
+        <span><a href="/app/bridge.html?board_no=123&S=x&H=x&A=x&name=zwl&T=1&C=x&V=x">PK seebrand</a></span><br>
+        <span><a href="/app/bridge.html?board_no=3&S=x&H=x&A=x&name=zwl&T=1&C=x&V=x">易居杯月赛</a></span><br>
+        <span><a href="/app/bridge.html?board_no=1&S=x&H=x&A=x&name=zwl&T=1&C=x&V=x">2025群英春节站</a></span><br>
+        <span><a href="/app/bridge.html?board_no=&S=x&H=x&A=x&name=zwl&T=1&C=x&V=x">2025交大团体赛</a></span><br>
+    </li>
+  <h2>历史牌局 </h2>
+  <div class="content">
+<ul>
+% for index, deal in enumerate(deals):
+    <li title="{{deal['feedback']}}" class="quality-{{deal['quality']}}">
+        <span>{{deal['board_no_index']}}  <a href="/app/viz.html?deal={{deal['deal_id']}}{{deal['board_no_ref']}}">{{deal['contract']}}{{deal['trick_winners_count']}}&nbsp;{{deal['score']}}</a>&nbsp<a href="/app/viz.html?deal={{deal['par_id']}}{{deal['board_no_ref']}}">{{deal['par_opponents']}} {{deal['par_contract']}}&nbsp;&nbsp;{{deal['imps']}}</a></span>&nbsp;&nbsp;
+        <span><a href="/app/bridge.html?board_no={{deal['board_number']}}&deal_id={{deal['deal_id']}}&H=x&A=x&S=x&T=1&C=x&V=x&name={{deal['player']}}">进入</a></span>
+        <span><a href="{{deal['delete_url']}}">delete</a></span><br>
+        <span id="bbaText{{deal['bba']}}"> {{deal['bba']}}&nbsp;&nbsp;<i class="fas fa-copy" onclick="copyToClipboard({{deal['bba_self']}})"></i>&nbsp;{{deal['system_flag']}}</span><br>
+        <span class="bba" title="Copy this">{{deal['player']}}&nbsp;<span id="bbaText{{index}}">{{deal['deal_time']}}&nbsp;<i class="fas fa-copy" onclick="copyToClipboard({{index}})"></i>
+        </span>
+        </span>
+    </li>
+% end
+</ul>
+</div>
+</div>
+
+<script>
+    // Retrieve the input field element
+    const inputField = document.getElementById('name');
+
+    // Check if there's a value in localStorage, if so, set the input field value to that
+    // if (localStorage.getItem('inputValue')) {
+    //    inputField.value = localStorage.getItem('inputValue');
+    // }
+
+    // Add an event listener to store the input field value in localStorage when it changes
+    inputField.addEventListener('input', function() {
+        localStorage.setItem('inputValue', inputField.value);
+    });
+
+    document.addEventListener("DOMContentLoaded", function() {
+        var dealTextarea = document.getElementById("deal");
+        dealTextarea.addEventListener("input", function() {
+            this.value = this.value.toUpperCase();
+        });
+    });
+
+    // Retrieve the dropdown element
+    const dropdown = document.getElementById('T');
+
+    // Check if there's a value in localStorage, if so, set the dropdown value to that
+    if (localStorage.getItem('selectedValue')) {
+      dropdown.value = localStorage.getItem('selectedValue');
+    }
+
+    // Add an event listener to store the selected value in localStorage when the dropdown changes
+    dropdown.addEventListener('change', function() {
+      localStorage.setItem('selectedValue', dropdown.value);
+    });
+
+
+// Get reference to the checkboxes and forms
+const checkbox1 = document.getElementById('N');
+const checkbox2 = document.getElementById('E');
+const checkbox3 = document.getElementById('S');
+const checkbox4 = document.getElementById('W');
+const checkbox5 = document.getElementById('H');
+const checkbox6 = document.getElementById('A');
+const checkbox7 = document.getElementById('C');
+const checkbox8 = document.getElementById('R');
+const checkbox9 = document.getElementById('V');
+const checkbox10 = document.getElementById('M');
+
+// Function to save checkbox state in localStorage
+function saveCheckboxState(checkboxId, checked) {
+    localStorage.setItem(checkboxId, checked);
+}
+
+// Function to load checkbox state from localStorage or set default
+function loadCheckboxState(checkboxId, defaultChecked) {
+    const savedCheckboxState = localStorage.getItem(checkboxId);
+
+    // If no value exists in localStorage, set a default value
+    if (savedCheckboxState === null) {
+        checkboxId.checked = defaultChecked
+        saveCheckboxState(checkboxId, defaultChecked); // Set to default value
+        return defaultChecked;
+    } else {
+        return savedCheckboxState === 'true';
+    }
+}
+
+// Load checkbox states when the page is loaded
+document.addEventListener('DOMContentLoaded', function() {
+    const checkboxes = document.querySelectorAll('input[type="checkbox"]');
+
+    checkboxes.forEach(checkbox => {
+        const defaultChecked = checkbox.getAttribute('data-default') === 'true';
+        checkbox.checked = loadCheckboxState(checkbox.id, defaultChecked);
+
+        checkbox.addEventListener('click', function() {
+            saveCheckboxState(checkbox.id, this.checked);
+        });
+    });
+});
+
+const submitButtons = document.querySelectorAll('.submit-button');
+
+// Variable to store the selected form
+let selectedForm = null;
+
+
+// Function to include checkbox values in form submission
+function includeCheckboxValues(event) {
+    event.preventDefault(); // Prevents the default form submission
+
+    if (selectedForm && !formerror) {
+        const formData = new FormData(selectedForm);
+        const checkboxes = [checkbox1, checkbox2, checkbox3, checkbox4, checkbox5, checkbox6, checkbox7, checkbox8, checkbox9, checkbox10];
+        checkboxes.forEach(checkbox => {
+            if (checkbox.checked) {
+                formData.append(checkbox.id, checkbox.value);
+            }
+        });
+
+        // Append input field value
+        const inputField = document.getElementById('name');
+        formData.append('name', inputField.value);
+
+        const play = {{ 'true' if play else 'false' }};
+        if (play === true) {
+            formData.append('play', 'True');
+        }        
+        // Append dropdown selected value
+        const dropdown = document.getElementById('T');
+        formData.append('T', dropdown.value);
+
+
+        // You can submit the form data using fetch or XMLHttpRequest here
+        // For example:
+        fetch('/submit', {
+             method: 'POST',
+             body: formData
+        })
+        .then(response => {
+            if (response.redirected) {
+                // If the response indicates a redirect, you can handle it here
+                // For example, you can redirect the user to the new location
+                window.location.href = response.url;
+            }        
+        })
+        .catch(error => {
+            // Handle error
+        });
+        console.log('Form Data:', formData); // For demonstration purposes
+        formerror = false
+    };
+}
+
+// Function to update selectedForm variable based on button click
+function updateSelectedForm(event) {
+    selectedForm = document.getElementById(this.dataset.form);
+}
+
+// Attach the includeCheckboxValues function to form submit events
+submitButtons.forEach(button => {
+    button.addEventListener('click', updateSelectedForm);
+    button.addEventListener('click', includeCheckboxValues);
+});
+
+</script>
+</body>
+<script>
+
+$(function(){
+	var str=sessionStorage.getItem("uname");
+	// $("#name").val({{username}});
+});
+
+</script>
+<p>CopyRight©2025 智慧桥园 联系 xen@bridgeXen.com</p>
+</html> 
