@@ -1,0 +1,242 @@
+{"message": "card_played", "player": 3, "card": "S3"}
+Setting card S3 played by 3 for PIMCDef
+Declarer 0 3 2 5 0 3 0 4 1 11
+Partner 1 4 0 3 0 3 0 3 0 10
+Setting card S3 played by 3 for PIMCDef
+Declarer 0 1 2 7 0 2 0 3 1 11
+Partner 0 1 2 7 0 2 0 3 1 11
+Setting card S3 played by 3 for PIMC
+East (RHO) 0 5 0 4 0 5 0 2 0 16
+West (LHO) 0 5 0 4 0 5 0 2 0 15
+player 0
+play status Forced
+{"message": "card_played", "player": 0, "card": "SJ"}
+Setting card SJ played by 0 for PIMCDef
+Declarer 0 3 2 5 0 3 0 4 1 11
+Partner 1 4 0 3 0 3 0 3 0 10
+Setting card SJ played by 0 for PIMCDef
+Declarer 0 1 2 7 0 2 0 3 1 11
+Partner 0 1 2 7 0 2 0 2 0 10
+Setting card SJ played by 0 for PIMC
+East (RHO) 0 5 0 4 0 5 0 2 0 16
+West (LHO) 0 5 0 4 0 5 0 1 0 14
+player 1
+play status Ruff
+Called init_rollout_states 200 - Contract 6DW - Player 1
+Called shuffle_cards_bidding_info 5000 - 175694357115451363613214168293407542713
+hand_str: 95.AQJ76.Q732.T9, hand: [[0. 0. 0. 0. 0. 2. 1. 0. 1. 1. 0. 2. 0. 0. 1. 0. 0. 3. 0. 0. 0. 0. 1. 1.]], Auction: ['PAD_START', 'PAD_START', 'PAD_START', '1S', 'PASS', '1N', 'PASS', '3D', 'PASS', '4D', 'PASS', '4N', 'PASS', '5D', 'PASS', '6D', 'PASS', 'PASS', 'PASS'], use bidding_info: True hidden: [ 1  9 12 14 15 15 17 21 23 23 26 27 30 31 31]
+We do not use the bidding info. Opponents passive=True
+players_states 5000 trick 6
+Unique states 1959
+Get bid scores for samples for 0. First hand J8x.KT8xx.x.Jxxx
+Get bid scores for samples for 2. First hand Kxx.9x.K9x.Q8xxx
+Samples 1959 before checking opening lead (after shape and hcp and bidding)
+validate_opening_lead_for_sample: lead_accept_threshold: 0.1 lead_accept_threshold_partner_trust: 0.1 min_sample_hands_play: 50 lead_accept_threshold_suit: False lead_accept_threshold_honors: True
+get_opening_lead_scores. False 22 partner False
+Samples 1787 after checking lead. 1787 possible samples. After validation: 1787
+Validating play
+5 [7, 3] 3 [[15, 7, 31, 31, 6], [8, 7, 29, 28, 5], [13, 7, 31, 31, 7], [15, 2, 24, 25, 0]] 0 2 1787
+Validating play for player 1 against player 0. Threshold: 0.1
+cards_played by 0 [15, 7, 31, 31, 6, 3]
+Validating play for player 1 against player 2. Threshold: 0.1
+cards_played by 2 [13, 7, 31, 31, 7]
+Found deals above play threshold: 948 play_accept_threshold=0.1
+Samples 948 after checking play. 948 possible samples
+Samples 948 after checking the play. Trick 6
+Bidding samples accepted:  876
+check remaining cards
+5 [7, 3] 3 [[15, 7, 31, 31, 6], [8, 7, 29, 28, 5], [13, 7, 31, 31, 7], [15, 2, 24, 25, 0]] 0 2 948
+check discards
+discards [set(), set(), set(), set()]
+5 [7, 3] 3 [[15, 7, 31, 31, 6], [8, 7, 29, 28, 5], [13, 7, 31, 31, 7], [15, 2, 24, 25, 0]] 0 2 948
+Returning 200 0.98319
+HCP constraints: 1 10 3 12 0.98319
+Shape constraints: [3, 1, 0, 3] [3, 6, 4, 7] [3, 1, 0, 2] [3, 6, 4, 6]
+already_shown_lho [3, 1, 0, 2]
+already_shown_rho [2, 1, 0, 2]
+set_shape_constraints
+East (RHO) 0 5 0 5 0 6 0 2 0 16
+West (LHO) 0 6 0 5 0 6 0 1 0 14
+next_card_softmax. Model: dummy_suit trick: 6
+Next card response time: 0.0064
+player_i 1
+.QJ76.Q732. T4..AJT85.
+K.KT842.K964.QJ876 3S JS
+Voids: [set(), set(), set(), set()]
+North
+Tricks taken: 5 Tricks needed: 7
+East (RHO) 0 5 0 4 0 5 0 1 0 16
+West (LHO) 0 5 0 4 0 5 0 1 0 14
+Autoplay True
+Current trick 3S JS
+Previous tricks 5H AH 9H 3H 5S 7S QS 6S AC 2C 9C 5C KC 4C TC 3C AS 8S 9S 2S
+RHO hand 72.9..53
+LHO hand J86.5..42
+Strategy False
+Trump: Diamond
+mintricks 7
+Threads are finished after 0.27.
+max_playout 200
+Playouts: 200
+Combinations: 12870
+Examined: 395
+200.0 38 6.99 964 0.72
+200.0 37 6.99 964 0.72
+200.0 33 7.08 1089 0.81
+200.0 28 7.11 1271 0.93
+200.0 15 6.08 44 0.10
+200.0 16 6.08 44 0.10
+200.0 20 6.10 47 0.10
+200.0 21 6.10 47 0.10
+Returning 8 from PIMC nextplay
+PIMC response time: 0.4424
+PIMC result:
+D2: (6.99, 964, 0.72, 'LHO: 0 5 0 4 0 5 0 1 0 14|RHO: 0 5 0 4 0 5 0 1 0 16|12870 - 395 - 200')
+D3: (6.99, 964, 0.72, 'LHO: 0 5 0 4 0 5 0 1 0 14|RHO: 0 5 0 4 0 5 0 1 0 16|12870 - 395 - 200')
+D7: (7.08, 1089, 0.81, 'LHO: 0 5 0 4 0 5 0 1 0 14|RHO: 0 5 0 4 0 5 0 1 0 16|12870 - 395 - 200')
+DQ: (7.11, 1271, 0.93, 'LHO: 0 5 0 4 0 5 0 1 0 14|RHO: 0 5 0 4 0 5 0 1 0 16|12870 - 395 - 200')
+HQ: (6.08, 44, 0.1, 'LHO: 0 5 0 4 0 5 0 1 0 14|RHO: 0 5 0 4 0 5 0 1 0 16|12870 - 395 - 200')
+HJ: (6.08, 44, 0.1, 'LHO: 0 5 0 4 0 5 0 1 0 14|RHO: 0 5 0 4 0 5 0 1 0 16|12870 - 395 - 200')
+H7: (6.1, 47, 0.1, 'LHO: 0 5 0 4 0 5 0 1 0 14|RHO: 0 5 0 4 0 5 0 1 0 16|12870 - 395 - 200')
+H6: (6.1, 47, 0.1, 'LHO: 0 5 0 4 0 5 0 1 0 14|RHO: 0 5 0 4 0 5 0 1 0 16|12870 - 395 - 200')
+10 first samples:
+N:.82.K64.87 .QJ76.Q732. K.KT4.9.QJ6 T4..AJT85.
+N:.K42.K.J87 .QJ76.Q732. K.T8.964.Q6 T4..AJT85.
+N:.K2.64.Q87 .QJ76.Q732. K.T84.K9.J6 T4..AJT85.
+N:.K2.K4.J76 .QJ76.Q732. K.T84.96.Q8 T4..AJT85.
+N:.4.K964.J6 .QJ76.Q732. K.KT82..Q87 T4..AJT85.
+N:.K82.K9.J7 .QJ76.Q732. K.T4.64.Q86 T4..AJT85.
+N:.KT4.K4.Q8 .QJ76.Q732. K.82.96.J76 T4..AJT85.
+N:.KT2.964.Q .QJ76.Q732. K.84.K.J876 T4..AJT85.
+N:.842.K.Q76 .QJ76.Q732. K.KT.964.J8 T4..AJT85.
+N:.K42..QJ87 .QJ76.Q732. K.T8.K964.6 T4..AJT85.
+Samples: 200  Solving: 200
+Calculating tricks. Using probability True
+D3 7.530 1380.50 1.00
+D2 7.530 1380.50 1.00
+D7 7.530 1380.50 1.00
+DQ 7.330 1357.09 0.98
+H7 6.100 73.90 0.17
+H6 6.100 73.90 0.17
+HQ 6.100 73.90 0.17
+HJ 6.100 73.90 0.17
+dds took: 0.0957
+Claim ([], 7.5)
+Claim cards after check: [], Bad claim cards []. Tricks 7.5
+Suit adjust: [0, 0, 0, 0], Trump adjust: 0, play_status: Ruff
+DQ 0.063 7.28 4.8 7.2
+D7 0.935 8.82 4.8 8.8
+D2 0.935 8.8 4.7 8.8
+D3 0.935 8.8 4.7 8.8
+H6 0.002 6.1 0.8 6.1
+H7 0.002 6.1 0.8 6.1
+HJ 0.000 6.09 0.8 6.0
+HQ 0.000 6.09 0.8 6.0
+select_right_card_for_play for player 1 95.AQJ76.Q732.T9 Play status: Ruff
+Checking SuitC: True 6DW  True
+original_count 4 current_count 4 discards  suit_played False
+No lead rules actual, playing top of candidate list DQ
+Play card response time: 0.5846
+
+{'candidates': [{'card': 'DQ',
+                 'expected_score_dd': 1336,
+                 'expected_tricks_dd': 7.28,
+                 'insta_score': 0.063,
+                 'msg': 'PIMC 25%|LHO: 0 5 0 4 0 5 0 1 0 14|RHO: 0 5 0 4 0 5 0 1 0 16|12870 - 395 - 200|7.11 1271.00 0.93|XEN DD 75%|7.33 1357.09 0.98',
+                 'p_make_contract': 0.97},
+                {'card': 'D7',
+                 'expected_score_dd': 1309,
+                 'expected_tricks_dd': 8.82,
+                 'insta_score': 0.935,
+                 'msg': 'PIMC 25%|LHO: 0 5 0 4 0 5 0 1 0 14|RHO: 0 5 0 4 0 5 0 1 0 16|12870 - 395 - 200|7.08 1089.00 0.81|XEN DD 75%|7.53 1380.50 1.00|adjust=1.4',
+                 'p_make_contract': 0.95},
+                {'card': 'D2',
+                 'expected_score_dd': 1278,
+                 'expected_tricks_dd': 8.8,
+                 'insta_score': 0.935,
+                 'msg': 'PIMC 25%|LHO: 0 5 0 4 0 5 0 1 0 14|RHO: 0 5 0 4 0 5 0 1 0 16|12870 - 395 - 200|6.99 964.00 0.72|XEN DD 75%|7.53 1380.50 1.00|adjust=1.4',
+                 'p_make_contract': 0.93},
+                {'card': 'D3',
+                 'expected_score_dd': 1278,
+                 'expected_tricks_dd': 8.8,
+                 'insta_score': 0.935,
+                 'msg': 'PIMC 25%|LHO: 0 5 0 4 0 5 0 1 0 14|RHO: 0 5 0 4 0 5 0 1 0 16|12870 - 395 - 200|6.99 964.00 0.72|XEN DD 75%|7.53 1380.50 1.00|adjust=1.4',
+                 'p_make_contract': 0.93},
+                {'card': 'H6',
+                 'expected_score_dd': 67,
+                 'expected_tricks_dd': 6.1,
+                 'insta_score': 0.002,
+                 'msg': 'PIMC 25%|LHO: 0 5 0 4 0 5 0 1 0 14|RHO: 0 5 0 4 0 5 0 1 0 16|12870 - 395 - 200|6.10 47.00 0.10|XEN DD 75%|6.10 73.90 0.17',
+                 'p_make_contract': 0.16},
+                {'card': 'H7',
+                 'expected_score_dd': 67,
+                 'expected_tricks_dd': 6.1,
+                 'insta_score': 0.002,
+                 'msg': 'PIMC 25%|LHO: 0 5 0 4 0 5 0 1 0 14|RHO: 0 5 0 4 0 5 0 1 0 16|12870 - 395 - 200|6.10 47.00 0.10|XEN DD 75%|6.10 73.90 0.17',
+                 'p_make_contract': 0.16},
+                {'card': 'HJ',
+                 'expected_score_dd': 66,
+                 'expected_tricks_dd': 6.09,
+                 'insta_score': 0.0,
+                 'msg': 'PIMC 25%|LHO: 0 5 0 4 0 5 0 1 0 14|RHO: 0 5 0 4 0 5 0 1 0 16|12870 - 395 - 200|6.08 44.00 0.10|XEN DD 75%|6.10 73.90 0.17',
+                 'p_make_contract': 0.16},
+                {'card': 'HQ',
+                 'expected_score_dd': 66,
+                 'expected_tricks_dd': 6.09,
+                 'insta_score': 0.0,
+                 'msg': 'PIMC 25%|LHO: 0 5 0 4 0 5 0 1 0 14|RHO: 0 5 0 4 0 5 0 1 0 16|12870 - 395 - 200|6.08 44.00 0.10|XEN DD 75%|6.10 73.90 0.17',
+                 'p_make_contract': 0.16}],
+ 'card': 'DQ',
+ 'quality': '0.9832',
+ 'samples': ['J8x.8xx.Kxx.8xxx 9x.AQJxx.Qxxx.T9 Kxx.KT9x.9.QJxxx AQTxx.x.AJT8x.AK - 0.99758 0.00584 0.40562 0.86503 1.00000 1.00000 ',
+             'J8x.Kxxx.K.J8xxx 9x.AQJxx.Qxxx.T9 Kxx.T98.9xx.Qxxx AQTxx.x.AJT8x.AK - 0.99997 0.00585 0.21639 0.85259 1.00000 1.00000 ',
+             'J8x.Kxx.xx.Q8xxx 9x.AQJxx.Qxxx.T9 Kxx.T98x.K9.Jxxx AQTxx.x.AJT8x.AK - 0.99996 0.00390 0.16264 0.90017 1.00000 1.00000 ',
+             'J8x.Kxx.Kx.Jxxxx 9x.AQJxx.Qxxx.T9 Kxx.T98x.9x.Q8xx AQTxx.x.AJT8x.AK - 0.99982 0.00585 0.24079 0.75581 1.00000 1.00000 ',
+             'J8x.xx.K9xx.Jxxx 9x.AQJxx.Qxxx.T9 Kxx.KT98x..Q8xxx AQTxx.x.AJT8x.AK - 0.81708 0.00478 0.59053 0.85308 1.00000 1.00000 ',
+             'J8x.K8xx.K9.Jxxx 9x.AQJxx.Qxxx.T9 Kxx.T9x.xx.Q8xxx AQTxx.x.AJT8x.AK - 0.99971 0.00780 0.27592 0.83439 1.00000 1.00000 ',
+             'J8x.KTxx.Kx.Q8xx 9x.AQJxx.Qxxx.T9 Kxx.98x.9x.Jxxxx AQTxx.x.AJT8x.AK - 0.99899 0.00195 0.30292 0.86117 1.00000 1.00000 ',
+             'J8x.KTxx.9xx.Qxx 9x.AQJxx.Qxxx.T9 Kxx.98x.K.J8xxxx AQTxx.x.AJT8x.AK - 0.99784 0.00389 0.20091 0.86592 1.00000 1.00000 ',
+             'J8x.8xxx.K.Qxxxx 9x.AQJxx.Qxxx.T9 Kxx.KT9.9xx.J8xx AQTxx.x.AJT8x.AK - 0.99993 0.00195 0.32241 0.78375 1.00000 1.00000 ',
+             'J8x.Kxxx..QJ8xxx 9x.AQJxx.Qxxx.T9 Kxx.T98.K9xx.xxx AQTxx.x.AJT8x.AK - 0.99864 0.00195 0.20820 0.85323 1.00000 1.00000 ',
+             'J8x.Kxx.K9x.Qxxx 9x.AQJxx.Qxxx.T9 Kxx.T98x.x.J8xxx AQTxx.x.AJT8x.AK - 0.98205 0.00958 0.24889 0.80149 1.00000 1.00000 ',
+             'J8x.T8xx.xx.Jxxx 9x.AQJxx.Qxxx.T9 Kxx.K9x.K9.Q8xxx AQTxx.x.AJT8x.AK - 0.96684 0.00754 0.35210 0.88324 1.00000 1.00000 ',
+             'J8x.Txxx.Kxx.Jxx 9x.AQJxx.Qxxx.T9 Kxx.K98.9.Q8xxxx AQTxx.x.AJT8x.AK - 0.97099 0.00189 0.38185 0.83891 1.00000 1.00000 ',
+             'J8x.Txxx.9x.Qxxx 9x.AQJxx.Qxxx.T9 Kxx.K98.Kx.J8xxx AQTxx.x.AJT8x.AK - 0.99008 0.00386 0.37314 0.83701 1.00000 1.00000 ',
+             'J8x.T8xx.K9.Qxxx 9x.AQJxx.Qxxx.T9 Kxx.K9x.xx.J8xxx AQTxx.x.AJT8x.AK - 0.99988 0.00390 0.43989 0.81003 1.00000 1.00000 ',
+             'J8x.T8xxx.K.Jxxx 9x.AQJxx.Qxxx.T9 Kxx.K9.9xx.Q8xxx AQTxx.x.AJT8x.AK - 0.99950 0.00195 0.27633 0.82455 1.00000 1.00000 ',
+             'J8x.8xxx.9x.Qxxx 9x.AQJxx.Qxxx.T9 Kxx.KT9.Kx.J8xxx AQTxx.x.AJT8x.AK - 0.98985 0.00193 0.39558 0.86186 1.00000 1.00000 ',
+             'J8x.KT8xx.x.J8xx 9x.AQJxx.Qxxx.T9 Kxx.9x.K9x.Qxxxx AQTxx.x.AJT8x.AK - 0.99806 0.01168 0.18077 0.90524 1.00000 1.00000 ',
+             'J8x.K8xx.K9.Qxxx 9x.AQJxx.Qxxx.T9 Kxx.T9x.xx.J8xxx AQTxx.x.AJT8x.AK - 0.99898 0.00390 0.29585 0.79684 1.00000 1.00000 ',
+             'J8x.T8xxx.x.QJxx 9x.AQJxx.Qxxx.T9 Kxx.K9.K9x.8xxxx AQTxx.x.AJT8x.AK - 0.98196 0.00192 0.26152 0.87885 1.00000 1.00000 '],
+ 'who': 'PIMC-XEN-IMP'}
+
+{"message": "card_played", "player": 1, "card": "DQ"}
+Setting card DQ played by 1 for PIMCDef
+Declarer 0 3 2 5 0 3 0 4 1 11
+Partner 1 4 0 3 0 3 0 3 0 10
+Setting card DQ played by 1 for PIMCDef
+Declarer 0 1 2 7 0 2 0 3 1 11
+Partner 0 1 2 7 0 2 0 2 0 10
+Setting card DQ played by 1 for PIMC
+East (RHO) 0 5 0 4 0 5 0 1 0 16
+West (LHO) 0 5 0 4 0 5 0 1 0 14
+player 2
+play status Forced
+{"message": "card_played", "player": 2, "card": "SK"}
+Setting card SK played by 2 for PIMCDef
+Declarer 0 3 2 5 0 3 0 4 1 11
+Partner 1 4 0 3 0 3 0 2 0 7
+Setting card SK played by 2 for PIMCDef
+Declarer 0 1 2 7 0 2 0 3 1 11
+Partner 0 1 2 7 0 2 0 2 0 10
+Setting card SK played by 2 for PIMC
+East (RHO) 0 5 0 4 0 5 0 0 0 13
+West (LHO) 0 5 0 4 0 5 0 1 0 14
+Initialize last trick 0
+Initialize last trick 1
+Initialize last trick 2
+Initialize last trick 3
+mintricks 6
+tricks_taken 6
+trick52 6 cards=['S3', 'SJ', 'DQ', 'SK']. won by 1
+Human [False, False, False, False]
