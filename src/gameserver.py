@@ -241,13 +241,13 @@ def worker(driver):
     asyncio.new_event_loop().run_until_complete(driver.run())
 
 
-async def handler(websocket, path, board_no, seed):
+async def handler(websocket, board_no, seed):
     print('{} Got websocket connection'.format(datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")))
 
     driver = game.Driver(models, human.WebsocketFactory(websocket, verbose), Sample.from_conf(configuration, verbose), seed, dds, verbose)
     play_only = False
     driver.human = [False, False, False, False]
-    parsed_url = urlparse(path)
+    parsed_url = urlparse(websocket.request.path)
     query_params = parse_qs(parsed_url.query)
     deal = None
     N = query_params.get('N', [None])[0]
