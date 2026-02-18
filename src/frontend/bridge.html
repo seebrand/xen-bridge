@@ -6,8 +6,8 @@
 
   <title>Bridge with BEN</title>
 
-  <link rel="stylesheet" href="style.css">
-  <script src="bridge.js"></script>
+  <link rel="stylesheet" href="style.css?v=2">
+  <script src="bridge.js?v=2"></script>
 
     <!-- Include jQuery and jQuery UI -->
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
@@ -27,7 +27,7 @@
 
 </head>
 
-<body>
+<body class="game-board">
 
 <div id="loader"></div> 
 <!-- HTML for the dialog -->
@@ -41,21 +41,44 @@
     </div>
   </div>
 
-    <div id="container">
-        <div id="north" class="grid-item"></div>
-        <div id="auction-main" class="grid-item">
-            <div id="auction-container"></div>
-            <div class="tricks">Tricks</div>
-            <div id="last-trick" style="visibility: hidden">last-trick</div>
-            <div id="claim" style="visibility: hidden">claim
-                <div id="claim-tricks">
-                </div>
+    <!-- Auction overlay (centered on screen, hidden until deal starts) -->
+    <div id="auction-main" style="display:none;">
+        <div id="auction-container"></div>
+    </div>
+
+    <!-- Play controls (tricks, claim, concede — visible during card play) -->
+    <div id="play-controls" style="display:none;">
+        <div class="tricks">Tricks</div>
+        <div id="play-actions">
+            <div id="last-trick" style="visibility: hidden">&#8634; Last Trick</div>
+            <div id="claim" style="visibility: hidden">&#127183; Claim
+                <div id="claim-tricks"></div>
             </div>
-            <div id="conceed" style="visibility: hidden">conceed
+            <div id="conceed" style="visibility: hidden">Concede</div>
+        </div>
+    </div>
+
+    <div id="container">
+        <!-- Player badge: North -->
+        <div id="north-badge-area" style="grid-area: nbadge; display:flex; justify-content:center; padding-bottom:0;">
+            <div class="player-badge" id="badge-north">
+                <span class="badge-circle bot">N</span>
+                <span class="badge-name">Lia</span>
+                <span class="badge-x">&times;</span>
             </div>
         </div>
-        <div id="west" class="grid-item"></div>
-        <div id="table" class="grid-item">
+        <div id="north"></div>
+
+        <div id="west-wrapper" style="grid-area: west; display:flex; flex-direction:column; align-items:flex-end; justify-content:center; padding-right:10px;">
+            <div class="player-badge" id="badge-west">
+                <span class="badge-circle bot">W</span>
+                <span class="badge-name">Lia</span>
+                <span class="badge-x">&times;</span>
+            </div>
+            <div id="west"></div>
+        </div>
+
+        <div id="table">
             <div id="table-container">
                 <div class="table-grid-item label-number">
                     <span class="seat-label"></span>
@@ -85,15 +108,32 @@
                 </div>
             </div>
         </div>
-        <div id="east" class="grid-item"></div>
-        <div id="south" class="grid-item"></div>
-        <div id="bidding" class="grid-item"></div>
+
+        <div id="east-wrapper" style="grid-area: east; display:flex; flex-direction:column; align-items:flex-start; justify-content:center; padding-left:10px;">
+            <div class="player-badge" id="badge-east">
+                <span class="badge-circle bot">E</span>
+                <span class="badge-name">Lia</span>
+                <span class="badge-x">&times;</span>
+            </div>
+            <div id="east"></div>
+        </div>
+
+        <!-- Player badge: South -->
+        <div id="south-badge-area" style="grid-area: sbadge; display:flex; justify-content:center; padding-top:0;">
+            <div class="player-badge" id="badge-south">
+                <span class="badge-circle human">S</span>
+                <span class="badge-name"></span>
+                <span class="badge-x">&times;</span>
+            </div>
+        </div>
+        <div id="south"></div>
+        <div id="bidding"></div>
     </div>
 
     <div id="explain" class="explain"></div>        
-    <div><a id="homeLink" href="/home/xen">renturn</a></div>
+    <a id="homeLink" href="/home/xen">&#8592; return</a>
 
-    <div id="auctionstr"></div>
+    <div id="auctionstr" style="display:none;"></div>
 
 
     <script>
@@ -231,7 +271,9 @@
         function cardClick(event) {
             console.log('card click')
             if (deal.expectCardInput) {
-                let card = new Card(event.target.getAttribute('symbol'))
+                let cardEl = event.target.closest('.card')
+                if (!cardEl) return
+                let card = new Card(cardEl.getAttribute('symbol'))
                 if (deal.hands[deal.turn]) {
                     if (deal.hands[deal.turn].isPlayable(card, deal.currentTrick)) {
                         ws.send(card.symbol)
@@ -322,17 +364,11 @@
                     if ((index + 2) % 4 == deal.dummy && ((index + 2) % 4 == deal.turn || index == deal.turn )) shouldBeVisible = true
                 }
                 if (shouldBeVisible) {
-                    // If the hand was previously hidden, make it visible again
-                    //if (deal.hands[index].rendered) {
-                        handElement.style.visibility = 'visible';
-                    //} else {
-                    //}
-                        // Call the render method with the direction
-                        deal.hands[index].render(handElement, direction);
+                    handElement.style.visibility = 'visible';
+                    deal.hands[index].render(handElement, direction);
                 } else {
-                    if (deal.hands[index].rendered) {
-                        handElement.style.visibility = 'hidden';
-                    }
+                    // Show card-backs for hidden hands
+                    deal.hands[index].renderCardBacks(handElement, direction);
                 }
             });
         }
@@ -380,6 +416,29 @@
                 if (east) deal.hands[1].isPublic = true
                 if (south) deal.hands[2].isPublic = true
                 if (west) deal.hands[3].isPublic = true
+
+                // Update player badges
+                let humanSeats = {0: north, 1: east, 2: south, 3: west}
+                let seatLetters = ['N', 'E', 'S', 'W']
+                let badgeIds = ['badge-north', 'badge-east', 'badge-south', 'badge-west']
+                for (let i = 0; i < 4; i++) {
+                    let badge = document.getElementById(badgeIds[i])
+                    if (badge) {
+                        let circle = badge.querySelector('.badge-circle')
+                        if (humanSeats[i]) {
+                            circle.classList.remove('bot')
+                            circle.classList.add('human')
+                            badge.querySelector('.badge-name').textContent = name || seatLetters[i]
+                        } else {
+                            circle.classList.remove('human')
+                            circle.classList.add('bot')
+                            badge.querySelector('.badge-name').textContent = 'Lia'
+                        }
+                    }
+                }
+
+                // Show auction overlay
+                document.querySelector('#auction-main').style.display = 'block'
                 let dealerLabel = ['.label-north', '.label-east', '.label-south', '.label-west'][deal.dealer]
 
                 document.querySelector(dealerLabel + ' .seat-label').classList.add("dealer")
@@ -454,7 +513,10 @@
                 deal.currentTrick = new Trick(deal.turn, [])
 
                 document.querySelector('#bidding').textContent = ''
-                deal.renderAuction(document.querySelector('#auction-container'))
+                // Hide the auction overlay after bidding is complete
+                document.querySelector('#auction-main').style.display = 'none'
+                // Show play controls (tricks, claim, concede)
+                document.querySelector('#play-controls').style.display = 'block'
 
                 document.querySelectorAll('.card')
                     .forEach(c => c.addEventListener('click', cardClick))
@@ -589,6 +651,7 @@
                 }
                 document.querySelector('#last-trick').style.visibility = 'hidden'
                 resetClaim()
+                document.querySelector('#play-controls').style.display = 'none'
                 $("#customDialog").dialog("open");
                 // Handle button clicks
                 $("#badButton").on("click", function() {
