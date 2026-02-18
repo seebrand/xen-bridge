@@ -124,6 +124,27 @@ class Hand {
 
     }
 
+    renderCardBacks(element, direction) {
+        element.textContent = ''
+        element.style.visibility = 'visible';
+        let count = this._cards.length
+        if (count === 0) count = 13
+        const wrapper = document.createElement('div');
+        wrapper.style.display = 'flex';
+        wrapper.style.alignItems = 'center';
+        wrapper.style.justifyContent = 'center';
+        if (direction === 'west' || direction === 'east') {
+            wrapper.style.flexDirection = 'column';
+        }
+        for (let i = 0; i < count; i++) {
+            let back = document.createElement('div')
+            back.classList.add('card-back')
+            wrapper.appendChild(back)
+        }
+        element.appendChild(wrapper)
+        this.rendered = true
+    }
+
     suitHtml(symbol, cards, red) {
         let html = '<div class="suit">'
         if (red) {
