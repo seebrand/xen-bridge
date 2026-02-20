@@ -34,6 +34,8 @@ class Hand {
 
     constructor(cards, isPublic, rendered) {
         this._cards = cards;
+        this._cardsInitialized = cards.length > 0;
+        this._hiddenCount = cards.length > 0 ? cards.length : 13;
         this.isPublic = isPublic;
         this.rendered = rendered;
         // Initialize suits based on the initial cards
@@ -46,6 +48,8 @@ class Hand {
 
     set cards(newCards) {
         this._cards = newCards;
+        this._cardsInitialized = true;
+        this._hiddenCount = newCards.length;
         this.updateSuits(); // Update suits whenever cards are set
     }
 
@@ -92,10 +96,17 @@ class Hand {
                 remainingCards.push(element)
             }
         }
-        return new Hand(remainingCards, this.isPublic, this.rendered)
+        let newHand = new Hand(remainingCards, this.isPublic, this.rendered)
+        // For hidden hands without card data, decrement the hidden count
+        if (!this._cardsInitialized) {
+            newHand._cardsInitialized = false;
+            newHand._hiddenCount = Math.max(0, this._hiddenCount - 1);
+        }
+        return newHand
     }
 
     render(element, direction) {
+        if (this._cards.length === 0) return
         element.textContent = ''
         element.style.visibility = 'visible';
         // Move trump to the left
@@ -122,13 +133,15 @@ class Hand {
 
         this.rendered = true
 
+        // Dynamic overlap adjustment for all directions
+        requestAnimationFrame(() => Hand.adjustOverlap(element));
     }
 
     renderCardBacks(element, direction) {
+        let count = this._cardsInitialized ? this._cards.length : this._hiddenCount;
+        if (count === 0) return
         element.textContent = ''
         element.style.visibility = 'visible';
-        let count = this._cards.length
-        if (count === 0) count = 13
         const wrapper = document.createElement('div');
         wrapper.style.display = 'flex';
         wrapper.style.alignItems = 'center';
@@ -143,6 +156,143 @@ class Hand {
         }
         element.appendChild(wrapper)
         this.rendered = true
+
+        // Dynamic overlap for horizontal card-backs
+        if (direction === 'north' || direction === 'south') {
+            requestAnimationFrame(() => Hand.adjustCardBackOverlap(wrapper, element));
+        }
+        // Dynamic vertical overlap for W/E card-backs
+        if (direction === 'west' || direction === 'east') {
+            requestAnimationFrame(() => Hand.adjustCardBackVerticalOverlap(wrapper, element));
+        }
+    }
+
+    static adjustOverlap(handElement) {
+        const allCards = handElement.querySelectorAll('.card');
+        if (allCards.length <= 1) return;
+        const availWidth = handElement.offsetWidth || handElement.getBoundingClientRect().width;
+        if (availWidth === 0) return;
+        const cardW = allCards[0].offsetWidth;
+
+        // Detect if suits are stacked vertically (W/E visible cards)
+        const computedDir = getComputedStyle(handElement).flexDirection;
+        const isVertical = computedDir === 'column';
+
+        if (isVertical) {
+            // For vertical suit-stacked layout (W/E), adjust overlap per suit container
+            const suitContainers = Array.from(handElement.children).filter(el => el.querySelector('.card'));
+            suitContainers.forEach(container => {
+                const cards = container.querySelectorAll('.card');
+                if (cards.length === 0) return;
+                const totalNeeded = cardW * cards.length;
+                if (totalNeeded > availWidth) {
+                    const maxOverlap = Math.floor(cardW * 0.65);
+                    const idealOverlap = Math.ceil((totalNeeded - availWidth) / Math.max(1, cards.length - 1));
+                    const overlap = Math.min(idealOverlap, maxOverlap);
+                    cards.forEach((card, i) => {
+                        card.style.marginLeft = i === 0 ? '0' : `-${overlap}px`;
+                    });
+                } else {
+                    cards.forEach((card, i) => {
+                        card.style.marginLeft = i === 0 ? '0' : `-${Math.min(8, cardW * 0.12)}px`;
+                    });
+                }
+            });
+
+            // Also ensure vertical stacking of suit rows fits within available height
+            const availHeight = handElement.offsetHeight || handElement.getBoundingClientRect().height;
+            if (availHeight > 0 && suitContainers.length > 1) {
+                const cardH = allCards[0].offsetHeight;
+                const totalVertical = cardH * suitContainers.length;
+                if (totalVertical > availHeight) {
+                    const visiblePerRow = Math.max(8, Math.floor((availHeight - cardH) / (suitContainers.length - 1)));
+                    const vOverlap = cardH - visiblePerRow;
+                    suitContainers.forEach((c, i) => {
+                        c.style.marginTop = i === 0 ? '0' : `-${vOverlap}px`;
+                    });
+                } else {
+                    suitContainers.forEach((c, i) => {
+                        c.style.marginTop = i === 0 ? '0' : '-2px';
+                    });
+                }
+            }
+        } else {
+            // Horizontal layout (N/S) — adjust across all cards
+            const suitGap = 4;
+            let suitCount = 0;
+            for (const child of handElement.children) {
+                if (child.querySelector('.card')) suitCount++;
+            }
+            const totalNeeded = cardW * allCards.length + suitGap * Math.max(0, suitCount - 1);
+            if (totalNeeded > availWidth) {
+                const maxOverlap = Math.floor(cardW * 0.55);
+                const idealOverlap = Math.ceil((cardW * allCards.length - availWidth) / (allCards.length - 1));
+                const overlap = Math.min(idealOverlap, maxOverlap);
+                let firstInHand = true;
+                allCards.forEach((card) => {
+                    if (firstInHand) {
+                        card.style.marginLeft = '0';
+                        firstInHand = false;
+                    } else {
+                        card.style.marginLeft = `-${overlap}px`;
+                    }
+                });
+            } else {
+                let firstInHand = true;
+                allCards.forEach((card) => {
+                    if (firstInHand) {
+                        card.style.marginLeft = '0';
+                        firstInHand = false;
+                    } else if (card.previousElementSibling && card.previousElementSibling.classList.contains('card')) {
+                        card.style.marginLeft = `-${Math.min(8, cardW * 0.12)}px`;
+                    } else {
+                        card.style.marginLeft = `${suitGap}px`;
+                    }
+                });
+            }
+        }
+    }
+
+    static adjustCardBackOverlap(wrapper, handElement) {
+        const backs = wrapper.querySelectorAll('.card-back');
+        if (backs.length <= 1) return;
+        const availWidth = handElement.offsetWidth || handElement.getBoundingClientRect().width;
+        if (availWidth === 0) return;
+        const backW = backs[0].offsetWidth;
+        const maxOverlap = Math.floor(backW * 0.7);
+        const totalNeeded = backW * backs.length;
+        if (totalNeeded > availWidth) {
+            const idealOverlap = Math.ceil((totalNeeded - availWidth) / (backs.length - 1));
+            const overlap = Math.min(idealOverlap, maxOverlap);
+            backs.forEach((back, i) => {
+                if (i > 0) back.style.marginLeft = `-${overlap}px`;
+            });
+        } else {
+            const defaultOverlap = Math.min(40, backW * 0.55);
+            backs.forEach((back, i) => {
+                if (i > 0) back.style.marginLeft = `-${defaultOverlap}px`;
+            });
+        }
+    }
+
+    static adjustCardBackVerticalOverlap(wrapper, handElement) {
+        const backs = wrapper.querySelectorAll('.card-back');
+        if (backs.length <= 1) return;
+        const availHeight = handElement.offsetHeight || handElement.getBoundingClientRect().height || 300;
+        const backH = backs[0].offsetHeight;
+        if (backH === 0 || availHeight === 0) return;
+
+        // Default: 70% overlap (show 30% per card)
+        const defaultVisible = Math.floor(backH * 0.3);
+        // Calculate max visible per card that fits in available height
+        const maxVisible = Math.floor((availHeight - backH) / Math.max(1, backs.length - 1));
+        // Use whichever is smaller, but at least 4px visible per card
+        const visiblePerCard = Math.max(4, Math.min(defaultVisible, maxVisible));
+        const overlap = backH - visiblePerCard;
+
+        backs.forEach((back, i) => {
+            back.style.marginTop = i === 0 ? '0' : `-${overlap}px`;
+        });
     }
 
     suitHtml(symbol, cards, red) {

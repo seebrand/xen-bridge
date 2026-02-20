@@ -3,11 +3,12 @@
 
 <head>
   <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 
   <title>Bridge with BEN</title>
 
-  <link rel="stylesheet" href="style.css?v=2">
-  <script src="bridge.js?v=2"></script>
+  <link rel="stylesheet" href="style.css?v=10">
+  <script src="bridge.js?v=10"></script>
 
     <!-- Include jQuery and jQuery UI -->
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
@@ -19,7 +20,7 @@
     $("#customDialog").dialog({
       autoOpen: false,
       modal: true,
-      position: { my: "center", at: "bottom", of: "#bidding" }, // Position relative to the button
+      position: { my: "center", at: "center", of: window }, // Center on screen
       buttons: {}
     });
   })
@@ -41,23 +42,6 @@
     </div>
   </div>
 
-    <!-- Auction overlay (centered on screen, hidden until deal starts) -->
-    <div id="auction-main" style="display:none;">
-        <div id="auction-container"></div>
-    </div>
-
-    <!-- Play controls (tricks, claim, concede — visible during card play) -->
-    <div id="play-controls" style="display:none;">
-        <div class="tricks">Tricks</div>
-        <div id="play-actions">
-            <div id="last-trick" style="visibility: hidden">&#8634; Last Trick</div>
-            <div id="claim" style="visibility: hidden">&#127183; Claim
-                <div id="claim-tricks"></div>
-            </div>
-            <div id="conceed" style="visibility: hidden">Concede</div>
-        </div>
-    </div>
-
     <div id="container">
         <!-- Player badge: North -->
         <div id="north-badge-area" style="grid-area: nbadge; display:flex; justify-content:center; padding-bottom:0;">
@@ -69,7 +53,7 @@
         </div>
         <div id="north"></div>
 
-        <div id="west-wrapper" style="grid-area: west; display:flex; flex-direction:column; align-items:flex-end; justify-content:center; padding-right:10px;">
+        <div id="west-wrapper" style="grid-area: west; display:flex; flex-direction:column; align-items:flex-end; justify-content:center; padding-right:4px; overflow:hidden; min-width:0;">
             <div class="player-badge" id="badge-west">
                 <span class="badge-circle bot">W</span>
                 <span class="badge-name">Lia</span>
@@ -79,15 +63,19 @@
         </div>
 
         <div id="table">
+            <!-- Auction overlay (centered within table, hidden until deal starts) -->
+            <div id="auction-main" style="display:none;">
+                <div id="auction-container"></div>
+                <div id="bidding"></div>
+            </div>
+
             <div id="table-container">
                 <div class="table-grid-item label-number">
-                    <span class="seat-label"></span>
                 </div>
                 <div class="table-grid-item label-north">
                     <span class="seat-label">N</span>
                 </div>
-                <div class="table-grid-item label-number">
-                    <span class="seat-label"></span>
+                <div class="table-grid-item" style="grid-column: span 1;">
                 </div>
                 <div class="table-grid-item label-west">
                     <div class="seat-label">W</div>
@@ -109,7 +97,7 @@
             </div>
         </div>
 
-        <div id="east-wrapper" style="grid-area: east; display:flex; flex-direction:column; align-items:flex-start; justify-content:center; padding-left:10px;">
+        <div id="east-wrapper" style="grid-area: east; display:flex; flex-direction:column; align-items:flex-start; justify-content:center; padding-left:4px; overflow:hidden; min-width:0;">
             <div class="player-badge" id="badge-east">
                 <span class="badge-circle bot">E</span>
                 <span class="badge-name">Lia</span>
@@ -127,7 +115,17 @@
             </div>
         </div>
         <div id="south"></div>
-        <div id="bidding"></div>
+        <!-- Play controls (tricks, claim, concede — visible during card play) -->
+        <div id="play-controls" style="display:none;">
+            <div class="tricks">Tricks</div>
+            <div id="play-actions">
+                <div id="last-trick" style="visibility: hidden">&#8634; Last Trick</div>
+                <div id="claim" style="visibility: hidden">&#127183; Claim
+                    <div id="claim-tricks"></div>
+                </div>
+                <div id="conceed" style="visibility: hidden">Concede</div>
+            </div>
+        </div>
     </div>
 
     <div id="explain" class="explain"></div>        
@@ -150,7 +148,7 @@
         const autocomplete = urlParams.get("A")
         const board_no = urlParams.get("board_no")
         const name = urlParams.get('name')
-        const timeout = urlParams.get('T')
+        const timeout = urlParams.get('T') || '1.5'
         const cont = urlParams.get('C')
         const rotate = urlParams.get('R')
         const visible = urlParams.get('V')
@@ -349,6 +347,8 @@
 
         function updateTable(deal) {
             const hands = ['north', 'east', 'south', 'west'];
+            // Initialize tracking array for hands that have been shown face-up
+            if (!deal._shownVisible) deal._shownVisible = [false, false, false, false];
 
             hands.forEach((direction, index) => {
                 const selector = `#${direction}`;
@@ -363,11 +363,19 @@
                     // When dummy to play we want to see declarers hand
                     if ((index + 2) % 4 == deal.dummy && ((index + 2) % 4 == deal.turn || index == deal.turn )) shouldBeVisible = true
                 }
-                if (shouldBeVisible) {
+
+                // Once shown face-up during card play, keep it face-up (only if hand has card data)
+                if (typeof deal.dummy != 'undefined' && deal._shownVisible[index] && deal.hands[index]._cardsInitialized) {
+                    shouldBeVisible = true;
+                }
+
+                if (shouldBeVisible && deal.hands[index]._cardsInitialized) {
+                    if (typeof deal.dummy != 'undefined') deal._shownVisible[index] = true;
                     handElement.style.visibility = 'visible';
                     deal.hands[index].render(handElement, direction);
                 } else {
-                    // Show card-backs for hidden hands
+                    // Show card-backs for hidden hands (or hands without card data)
+                    handElement.style.visibility = 'visible';
                     deal.hands[index].renderCardBacks(handElement, direction);
                 }
             });
@@ -399,6 +407,25 @@
 
         document.querySelector('body').addEventListener('click', function() {
             sendConfirmTrick()
+        })
+
+        // Re-adjust card overlaps on window resize
+        window.addEventListener('resize', function() {
+            ['#north', '#south', '#west', '#east'].forEach(sel => {
+                const el = document.querySelector(sel);
+                if (el && el.querySelector('.card')) {
+                    Hand.adjustOverlap(el);
+                } else if (el && el.querySelector('.card-back')) {
+                    const wrapper = el.querySelector('div');
+                    if (wrapper) {
+                        if (sel === '#west' || sel === '#east') {
+                            Hand.adjustCardBackVerticalOverlap(wrapper, el);
+                        } else {
+                            Hand.adjustCardBackOverlap(wrapper, el);
+                        }
+                    }
+                }
+            });
         })
 
         ws.onmessage = function (event) {
@@ -506,6 +533,7 @@
             } else if (data.message == "auction_end") {
                 deal.auction = data.auction
                 deal.declarer = data.declarer
+                deal.dummy = (data.declarer + 2) % 4
                 deal.strain = data.strain
                 deal.turn = (data.declarer + 1) % 4
                 setTurn(deal.turn)
@@ -593,6 +621,8 @@
                         }
                     }
                 }
+                // Re-render all hands (updates card-backs for hidden hands)
+                updateTable(deal)
                 document.querySelectorAll('.card')
                     .forEach(c => c.addEventListener('click', cardClick))
                 deal.currentTrick.render(getTrickCardSlots())
