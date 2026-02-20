@@ -2,6 +2,19 @@
    BBO-Style Bridge UI
    ============================================================ */
 
+/* --- Responsive card dimensions (vh-based for viewport fitting) --- */
+:root {
+    --card-h: clamp(52px, 9.5vh, 90px);
+    --card-w: clamp(36px, 6.6vh, 62px);
+    --card-radius: 7px;
+    --card-font: clamp(0.85rem, 1.7vh, 1.4rem);
+    --card-rank-font: clamp(0.95rem, 2vh, 1.6rem);
+    --table-card-h: clamp(42px, 8vh, 72px);
+    --table-card-w: clamp(30px, 5.5vh, 50px);
+    --table-card-font: clamp(0.8rem, 1.5vh, 1.2rem);
+    --table-rank-font: clamp(0.9rem, 1.7vh, 1.3rem);
+}
+
 /* --- Reset & Base --- */
 *, *::after, *::before {
     box-sizing: border-box;
@@ -21,6 +34,9 @@ body {
 body.game-board {
     background: radial-gradient(ellipse at center, #1e6b35 0%, #0f4a22 60%, #0a3318 100%);
     color: #e0e0e0;
+    overflow: hidden;
+    height: 100vh;
+    height: 100dvh;
 }
 
 .hidden {
@@ -69,22 +85,23 @@ p {
    ============================================================ */
 #container {
     display: grid;
-    grid-template-columns: 1fr minmax(240px, 300px) minmax(300px, 400px) minmax(240px, 300px) 1fr;
-    grid-template-rows: auto auto 1fr auto auto auto;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 4fr) minmax(0, 1fr);
+    grid-template-rows: auto auto minmax(0, 1fr) auto auto auto;
     grid-template-areas:
-        ".        nbadge  nbadge  nbadge  ."
-        ".        north   north   north   ."
-        "west     west    table   east    east"
-        ".        south   south   south   ."
-        ".        sbadge  sbadge  sbadge  ."
-        ".        bidding bidding bidding .";
-    min-height: 100vh;
+        "nbadge   nbadge   nbadge"
+        "north    north    north"
+        "west     table    east"
+        "playctrl playctrl playctrl"
+        "sbadge   sbadge   sbadge"
+        "south    south    south";
+    height: 100vh;
+    height: 100dvh;
     max-width: 1200px;
     margin: 0 auto;
-    padding: 10px 0;
-    gap: 4px;
-    align-items: center;
+    padding: 4px 4px 8px 4px;
+    gap: 2px;
     position: relative;
+    overflow: hidden;
 }
 
 /* --- Hand Areas --- */
@@ -93,8 +110,10 @@ p {
     display: flex;
     justify-content: center;
     align-items: flex-end;
-    padding: 8px 0;
-    min-height: 60px;
+    padding: 2px 0 4px 0;
+    overflow: hidden;
+    max-height: calc(var(--card-h) + 10px);
+    min-width: 0;
 }
 
 #south {
@@ -102,8 +121,9 @@ p {
     display: flex;
     justify-content: center;
     align-items: flex-start;
-    padding: 8px 0;
-    min-height: 60px;
+    padding: 2px 0 4px 0;
+    overflow: hidden;
+    min-width: 0;
 }
 
 #west {
@@ -111,7 +131,10 @@ p {
     flex-direction: column;
     align-items: flex-end;
     justify-content: center;
-    min-height: 80px;
+    overflow: hidden;
+    min-width: 0;
+    width: 100%;
+    max-height: 100%;
 }
 
 #east {
@@ -119,7 +142,10 @@ p {
     flex-direction: column;
     align-items: flex-start;
     justify-content: center;
-    min-height: 80px;
+    overflow: hidden;
+    min-width: 0;
+    width: 100%;
+    max-height: 100%;
 }
 
 /* --- Center Table (trick area) --- */
@@ -128,16 +154,23 @@ p {
     background: rgba(0, 0, 0, 0.18);
     border-radius: 16px;
     border: 2px solid rgba(255,255,255,0.08);
-    min-height: 260px;
     position: relative;
+    aspect-ratio: 1;
+    width: clamp(200px, 38vw, 400px);
+    max-height: 100%;
+    max-width: 100%;
+    align-self: center;
+    justify-self: center;
 }
 
 #table-container {
     display: grid;
-    grid-template-columns: 1fr 2fr 2fr 2fr 1fr;
-    grid-template-rows: 1fr 3fr 3fr 1fr;
+    grid-template-columns: auto 1fr auto 1fr auto;
+    grid-template-rows: auto 1fr 1fr auto;
     height: 100%;
-    min-height: 260px;
+    align-items: center;
+    justify-items: center;
+    padding: 4px;
 }
 
 .table-grid-item {
@@ -225,28 +258,27 @@ p {
     animation: pulse-glow 1.5s ease-in-out infinite;
 }
 
-#table .red {
-    color: #ff4444;
-    border-color: #ff4444;
-    background: rgba(255,68,68,0.12);
+#table .card.red {
+    color: #ff3333;
+    border-color: #ff3333;
 }
 
 /* Trick cards on the table */
 #table .card {
-    width: 62px;
-    height: 88px;
-    font-size: 1.3rem;
+    width: var(--table-card-w);
+    height: var(--table-card-h);
+    font-size: var(--table-card-font);
     margin-left: 0;
     cursor: default;
 }
 
 #table .card:hover {
     transform: none;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.4);
+    box-shadow: 0 2px 6px rgba(0,0,0,0.3);
 }
 
 #table .card::before {
-    font-size: 1.5rem;
+    font-size: var(--table-rank-font);
     top: 4px;
 }
 
@@ -295,27 +327,34 @@ p {
     margin-left: 2px;
 }
 
+/* Hide player names — not in use */
+.badge-name,
+.badge-x {
+    display: none;
+}
+
 /* ============================================================
    CARDS
    ============================================================ */
 .card {
-    height: 110px;
-    width: 76px;
-    border: 2px solid rgba(255,255,255,0.15);
-    border-radius: 8px;
+    height: var(--card-h);
+    width: var(--card-w);
+    border: 2px solid #bbb;
+    border-radius: var(--card-radius);
     margin-left: -8px;
-    font-size: 1.6rem;
+    font-size: var(--card-font);
     justify-content: center;
     display: flex;
     align-items: flex-end;
-    padding-bottom: 8px;
-    background: linear-gradient(145deg, #3a3a3a, #2a2a2a);
-    color: #ffffff;
+    padding-bottom: 6px;
+    background: #fff;
+    color: #222;
     z-index: 100;
     cursor: pointer;
     transition: transform 0.15s ease, box-shadow 0.15s ease;
     box-shadow: 0 2px 8px rgba(0,0,0,0.4);
     position: relative;
+    flex-shrink: 0;
 }
 
 .card:first-child {
@@ -324,17 +363,17 @@ p {
 
 .card:hover {
     transform: translateY(-8px);
-    box-shadow: 0 6px 20px rgba(0,0,0,0.6);
+    box-shadow: 0 6px 16px rgba(0,0,0,0.35);
     z-index: 200;
 }
 
 .card::before {
     content: attr(data-value);
     position: absolute;
-    top: 6px;
+    top: 4px;
     left: 50%;
     transform: translateX(-50%);
-    font-size: 1.8rem;
+    font-size: var(--card-rank-font);
     font-family: 'Georgia', serif;
     font-weight: bold;
 }
@@ -363,22 +402,26 @@ p {
     color: #ff8c00;
 }
 
-/* Default (spades) color */
+/* Default (spades) color — black on white card */
 .card:not(.red):not(.green):not(.orange) {
-    color: #ffffff;
+    color: #222;
+}
+
+.card:not(.red):not(.green):not(.orange)::before {
+    color: #222;
 }
 
 .empty-suit {
-    height: 110px;
+    height: var(--card-h);
     width: 0;
     visibility: hidden;
 }
 
 /* --- Card Backs (for hidden opponent hands) --- */
 .card-back {
-    height: 110px;
-    width: 76px;
-    border-radius: 8px;
+    height: var(--card-h);
+    width: var(--card-w);
+    border-radius: var(--card-radius);
     margin-left: -40px;
     background:
         repeating-linear-gradient(
@@ -402,23 +445,13 @@ p {
 /* West/East card-backs: stacked vertically with overlap */
 #west .card-back,
 #east .card-back {
-    width: 60px;
-    height: 80px;
     margin-left: 0;
-    margin-top: -55px;
+    margin-top: calc(var(--card-h) * -0.7);
 }
 
 #west .card-back:first-child,
 #east .card-back:first-child {
     margin-top: 0;
-}
-
-/* North card-backs: horizontal overlap */
-#north .card-back {
-    margin-left: -40px;
-}
-#north .card-back:first-child {
-    margin-left: 0;
 }
 
 /* ============================================================
@@ -438,8 +471,8 @@ p {
     font-family: 'Segoe UI', Arial, sans-serif;
     color: #222;
     padding: 16px;
-    min-width: 320px;
-    max-width: 420px;
+    min-width: min(320px, calc(100vw - 40px));
+    max-width: min(420px, calc(100vw - 40px));
     max-height: 70vh;
     overflow-y: auto;
 }
@@ -539,10 +572,11 @@ p {
    BIDDING BOX
    ============================================================ */
 #bidding {
-    grid-area: bidding;
     display: flex;
-    justify-content: center;
+    flex-direction: column;
+    align-items: center;
     padding: 8px 0;
+    gap: 4px;
 }
 
 #bidding-levels {
@@ -730,6 +764,14 @@ p {
     max-width: 400px;
 }
 
+.ui-dialog {
+    z-index: 1100 !important;
+}
+
+.ui-widget-overlay {
+    z-index: 1050 !important;
+}
+
 #commentInput {
     width: 100%;
     height: 80px;
@@ -907,12 +949,9 @@ span.bba {
    PLAY CONTROLS (tricks + claim/concede during card play)
    ============================================================ */
 #play-controls {
-    position: fixed;
-    bottom: 20px;
-    left: 50%;
-    transform: translateX(-50%);
-    z-index: 500;
+    grid-area: playctrl;
     text-align: center;
+    padding: 4px 0;
 }
 
 #play-actions {
@@ -937,4 +976,74 @@ span.bba {
     background: rgba(0,0,0,0.3);
     color: rgba(255,255,255,0.6);
     font-size: 0.85rem;
+}
+
+/* ============================================================
+   RESPONSIVE — Small height viewports
+   ============================================================ */
+@media (max-height: 650px) {
+    :root {
+        --card-h: clamp(42px, 8.5vh, 68px);
+        --card-w: clamp(29px, 5.9vh, 47px);
+        --table-card-h: clamp(34px, 6.5vh, 52px);
+        --table-card-w: clamp(24px, 4.5vh, 36px);
+    }
+    .player-badge .badge-circle { width: 24px; height: 24px; font-size: 0.7rem; }
+    .player-badge .badge-name { font-size: 0.75rem; }
+    #table .seat-label { width: 28px; height: 28px; font-size: 1rem; }
+    .card:hover { transform: translateY(-4px); }
+}
+
+/* ============================================================
+   RESPONSIVE — Mobile width
+   ============================================================ */
+@media (max-width: 600px) {
+    :root {
+        --card-h: clamp(38px, 7vh, 60px);
+        --card-w: clamp(27px, 4.9vh, 42px);
+        --table-card-h: clamp(30px, 5.5vh, 46px);
+        --table-card-w: clamp(21px, 3.8vh, 32px);
+        --table-card-font: clamp(0.65rem, 1.2vh, 0.9rem);
+        --table-rank-font: clamp(0.7rem, 1.4vh, 1rem);
+        --card-font: clamp(0.65rem, 1.3vh, 0.9rem);
+        --card-rank-font: clamp(0.7rem, 1.5vh, 1.1rem);
+    }
+    #container {
+        grid-template-columns: minmax(0, 1fr) minmax(0, 4fr) minmax(0, 1fr);
+        padding: 2px 2px 6px 2px;
+        gap: 1px;
+    }
+    #table {
+        width: clamp(150px, 45vw, 300px);
+    }
+    #play-controls { padding: 2px 0; }
+    #play-actions { margin-top: 2px; gap: 4px; }
+    .player-badge { margin: 2px 0; }
+    .player-badge .badge-circle { width: 22px; height: 22px; font-size: 0.65rem; }
+    .player-badge .badge-name { font-size: 0.7rem; }
+    #table .seat-label { width: 24px; height: 24px; font-size: 0.85rem; }
+    .label-number { font-size: 1rem; margin: 4px; }
+    .card:hover { transform: translateY(-4px); }
+    #auction-main {
+        min-width: min(240px, calc(100vw - 20px));
+        max-width: min(300px, calc(100vw - 20px));
+        padding: 10px;
+        font-size: 1rem;
+    }
+    #bidding-levels div, #bidding-suits div {
+        width: 2.2rem;
+        height: 2.2rem;
+        font-size: 1.2rem;
+        padding: 4px;
+    }
+    #bidding-calls div {
+        min-width: 3rem;
+        height: 2.2rem;
+        font-size: 1rem;
+        padding: 4px 8px;
+    }
+    .tricks { font-size: 0.9rem; padding: 4px 12px; }
+    #last-trick, #claim, #conceed { font-size: 0.8rem; padding: 4px 8px; }
+    #homeLink { font-size: 0.75rem; }
+    .explain { margin: 4px 12px; font-size: 10px; padding: 4px 8px; }
 }
