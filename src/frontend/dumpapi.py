@@ -14,11 +14,14 @@ print("Reading deals from: "+DB_NAME)
 if __name__ == '__main__':
 
     deals = []
-    with shelve.open(DB_NAME) as db:
-        deal_items = list(db.items())
-        with open('api.json', 'w', encoding='utf-8') as file:  # Open the output file with UTF-8 encoding
-            for deal_id, deal in deal_items:
-                deals.append(deal)
-            file.write(json.dumps(deals))
-            print("File api.json generated")
+    from filelock import FileLock
+    lock = FileLock(DB_NAME + ".lock")
+    with lock:
+        with shelve.open(DB_NAME) as db:
+            deal_items = list(db.items())
+            with open('api.json', 'w', encoding='utf-8') as file:  # Open the output file with UTF-8 encoding
+                for deal_id, deal in deal_items:
+                    deals.append(deal)
+                file.write(json.dumps(deals))
+                print("File api.json generated")
         

@@ -106,7 +106,7 @@ config_path = get_execution_path()
 parser = argparse.ArgumentParser(description="Game server")
 parser.add_argument("--boards", default="", help="Filename for boards")
 parser.add_argument("--boardno", default=0, type=int, help="Board number to start from")
-parser.add_argument("--config", default=f"{config_path}/config/default.conf", help="Filename for configuration")
+parser.add_argument("--config", default=f"{config_path}/src/config/default.conf", help="Filename for configuration")
 parser.add_argument("--opponent", default="", help="Filename for configuration pf opponents")
 parser.add_argument("--verbose", type=str_to_bool, default=False, help="Output samples and other information during play")
 parser.add_argument("--port", type=int, default=4443, help="Port for appserver")
@@ -261,7 +261,14 @@ async def handler(websocket, board_manager, seed, concurrency_limiter):
     print(f"{datetime.datetime.now():%Y-%m-%d %H:%M:%S} Got websocket connection ({session_id})")
 
     async with concurrency_limiter:
-        driver = game.Driver(models, human.WebsocketFactory(websocket, verbose), Sample.from_conf(configuration, verbose), seed, dds, verbose)
+        import copy
+        local_models = copy.copy(models)
+        
+        # We will initialize dds per connection to avoid bottleneck on the single instance lock
+        from ddsolver import ddsolver
+        local_dds = ddsolver.DDSolver()
+
+        driver = game.Driver(local_models, human.WebsocketFactory(websocket, verbose), Sample.from_conf(configuration, verbose), seed, local_dds, verbose)
         play_only = False
         driver.human = [False, False, False, False]
         parsed_url = urlparse(websocket.request.path)
@@ -283,9 +290,9 @@ async def handler(websocket, board_manager, seed, concurrency_limiter):
         if R: driver.rotate = True
         M = query_params.get('M', [None])[0]
         if M: 
-            models.matchpoint = True
+            local_models.matchpoint = True
         else:
-             models.matchpoint = False
+             local_models.matchpoint = False
         P = query_params.get('P', [None])[0]
         if P == "5":
             play_only = True
@@ -298,7 +305,7 @@ async def handler(websocket, board_manager, seed, concurrency_limiter):
         if deal:
             if board_number is None:
                 board_number = np.random.randint(1, 1000)
-            np.random.seed(board_number)
+            rng = np.random.default_rng(board_number)
             split_values = deal[1:-1].replace("'","").split(',')
             rdeal = tuple(value.strip() for value in split_values)
             driver.set_deal(board_number, *rdeal, play_only)
@@ -307,8 +314,8 @@ async def handler(websocket, board_manager, seed, concurrency_limiter):
             if random:
                 if board_number is None:
                     board_number = np.random.randint(1, 1000)
-                np.random.seed(board_number)
-                rdeal = game.random_deal_board(board_number)
+                rng = np.random.default_rng(board_number)
+                rdeal = game.random_deal_board(board_number, rng)
                 print(f"Board: {board_number} {rdeal}")
                 driver.set_deal(board_number, *rdeal, False)
             else:
@@ -316,7 +323,7 @@ async def handler(websocket, board_manager, seed, concurrency_limiter):
                     raise RuntimeError("Board manager not initialized for sequential boards")
                 board_number, rdeal, auction = await board_manager.next_board()
                 print(f"{Fore.LIGHTBLUE_EX}Board: {board_number} {rdeal}{Fore.RESET}")
-                np.random.seed(board_number)
+                rng = np.random.default_rng(board_number)
                 driver.set_deal(board_number, rdeal, auction, play_only)
 
         log_memory_usage()
@@ -325,8 +332,10 @@ async def handler(websocket, board_manager, seed, concurrency_limiter):
             await driver.run(t_start)
 
             print(f'{Fore.CYAN}{datetime.datetime.now():%Y-%m-%d %H:%M:%S} ({session_id}) Board played in {time.time() - t_start:0.1f} seconds.{Fore.RESET}')  
-            gc.collect()
-            log_memory_usage()
+            
+            # Periodically collect garbage in a non-blocking way if needed, or rely on Python's automatic GC
+            # We remove the synchronous gc.collect() to avoid blocking the event loop
+            # log_memory_usage()
 
         except (ConnectionClosedOK, ConnectionClosedError, ConnectionAbortedError):
             print(f'User left ({session_id})')

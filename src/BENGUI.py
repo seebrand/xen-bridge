@@ -118,7 +118,7 @@ class TableManagerApp(tk.Tk):
         config_label.grid(row=0, column=0, padx=5, pady=5, sticky="w")
 
         self.config_entry = ttk.Entry(col_frames[3], width=25)
-        self.config_entry.insert(0, "config/default.conf")
+        self.config_entry.insert(0, "src/config/default.conf")
         self.config_entry.grid(row=1, column=0, padx=5, pady=5)
 
         # Browse button for Config in column 3

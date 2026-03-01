@@ -996,7 +996,7 @@ async def main():
     parser.add_argument("--port", type=int, default=2000, help="Port for Table Manager")
     parser.add_argument("--name", required=True, help="Name in Table Manager")
     parser.add_argument("--seat", required=True, help="Where to sit (North, East, South or West)")
-    parser.add_argument("--config", default=f"{config_path}/config/default.conf", help="Filename for configuration")
+    parser.add_argument("--config", default=f"{config_path}/src/config/default.conf", help="Filename for configuration")
     parser.add_argument("--opponent", default="", help="Filename for configuration pf opponents")
     parser.add_argument("--biddingonly", type=str_to_bool, default=False, help="Only bid, no play")
     parser.add_argument("--nosearch", type=str_to_bool, default=False, help="Just use neural network")
@@ -1154,13 +1154,16 @@ async def main():
             if deal["board_number"] == "1" and first:
                 cleanup_shelf(shelf_filename)
                 first = False
-            with shelve.open(shelf_filename) as db:
-                print(f"{datetime.datetime.now():%H:%M:%S} Saving Board:",client.deal_str)
-                print(f'{Fore.CYAN}{datetime.datetime.now():%H:%M:%S} Board played in {time.time() - t_start:0.1f} seconds.{Fore.RESET}')  
-                if deal["board_number"]+"-Open" not in db:
-                    db[deal["board_number"]+"-Open"] = deal
-                else:
-                    db[deal["board_number"]+"-Closed"] = deal
+            from filelock import FileLock
+            lock = FileLock(shelf_filename + ".lock")
+            with lock:
+                with shelve.open(shelf_filename) as db:
+                    print(f"{datetime.datetime.now():%H:%M:%S} Saving Board:",client.deal_str)
+                    print(f'{Fore.CYAN}{datetime.datetime.now():%H:%M:%S} Board played in {time.time() - t_start:0.1f} seconds.{Fore.RESET}')  
+                    if deal["board_number"]+"-Open" not in db:
+                        db[deal["board_number"]+"-Open"] = deal
+                    else:
+                        db[deal["board_number"]+"-Closed"] = deal
         np.empty(0) 
         gc.collect()
 

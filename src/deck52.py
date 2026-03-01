@@ -34,9 +34,11 @@ def decode_card(card52):
     return 'SHDC'[suit_i] + 'AKQJT98765432'[card_i]
 
 
-def random_deal():
+def random_deal(rng=None):
+    if rng is None:
+        rng = np.random
     all_cards = list(range(52))
-    np.random.shuffle(all_cards)
+    rng.shuffle(all_cards)
 
     hands_cards = [all_cards[:13], all_cards[13:26], all_cards[26:39], all_cards[39:]]
     hands = []
@@ -50,25 +52,30 @@ def random_deal():
     return ' '.join(map(deal_to_str, hands))
 
 
-def random_dealer_vuln():
-    dealer = np.random.choice(['N', 'E', 'S', 'W'])
-    vuln = np.random.choice(['None', 'N-S', 'E-W', 'Both'])
+def random_dealer_vuln(rng=None):
+    if rng is None:
+        rng = np.random
+    dealer = rng.choice(['N', 'E', 'S', 'W'])
+    vuln = rng.choice(['None', 'N-S', 'E-W', 'Both'])
 
     return '%s %s' % (dealer, vuln)
 
-def board_dealer_vuln(number):
+
+def board_dealer_vuln(number, rng=None):
+    if rng is None:
+        rng = np.random
     dealerList = ['N', 'E', 'S', 'W']
     vulnList = ['None', 'N-S', 'E-W', 'Both', 
-        'N-S', 'E-W', 'Both', 'None',
-        'E-W', 'Both', 'None', 'N-S', 
-        'Both', 'None', 'N-S', 'E-W']
+                'N-S', 'E-W', 'Both', 'None',
+                'E-W', 'Both', 'None', 'N-S',
+                'Both', 'None', 'N-S', 'E-W']
 
-    if number:
+    if number > 0:
         dealer = dealerList[(number-1) % 4]
         vuln = vulnList[(number-1) % 16]
     else:         
-        dealer = np.random.choice(['N', 'E', 'S', 'W'])
-        vuln = np.random.choice(['None', 'N-S', 'E-W', 'Both'])
+        dealer = rng.choice(['N', 'E', 'S', 'W'])
+        vuln = rng.choice(['None', 'N-S', 'E-W', 'Both'])
 
     return '%s %s' % (dealer, vuln)
 
