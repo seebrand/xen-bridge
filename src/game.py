@@ -97,17 +97,37 @@ def random_deal_board(number=None):
 
 class AsyncBotBid(botbidder.BotBid):
     async def async_bid(self, auction, alert=None):
-        return self.bid(auction)
+        return await asyncio.to_thread(self.bid, auction)
+
 
 class AsyncBotLead(botopeninglead.BotLead):
     async def async_opening_lead(self, auction, aceking):
-        return self.find_opening_lead(auction, aceking)
+        return await asyncio.to_thread(self.find_opening_lead, auction, aceking)
+
 
 class AsyncCardPlayer(botcardplayer.CardPlayer):
     async def async_play_card(self, trick_i, leader_i, current_trick52, tricks52, players_states, worlds, bidding_scores, quality, probability_of_occurence, shown_out_suits, play_status, lead_scores, play_scores, logical_play_scores, discard_scores, features):
-        return self.play_card(trick_i, leader_i, current_trick52, tricks52, players_states, worlds, bidding_scores, quality, probability_of_occurence, shown_out_suits, play_status, lead_scores, play_scores, logical_play_scores, discard_scores, features)
-    
-    
+        return await asyncio.to_thread(
+            self.play_card,
+            trick_i,
+            leader_i,
+            current_trick52,
+            tricks52,
+            players_states,
+            worlds,
+            bidding_scores,
+            quality,
+            probability_of_occurence,
+            shown_out_suits,
+            play_status,
+            lead_scores,
+            play_scores,
+            logical_play_scores,
+            discard_scores,
+            features,
+        )
+
+
 class Driver:
 
     def __init__(self, models, factory, sampler, seed, ddsolver, verbose):

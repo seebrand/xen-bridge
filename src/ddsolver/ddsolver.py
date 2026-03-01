@@ -1,5 +1,6 @@
 import sys
 import ctypes
+import threading
 from typing import Dict, List
 from collections import Counter
 from objects import Card
@@ -27,53 +28,55 @@ class DDSolver:
         self.dds_mode = dds_mode
         self.bo = dds.boardsPBN()
         self.solved = dds.solvedBoards()
+        self._lock = threading.Lock()
 
     def version(self):  
         return "2.9.0"
     
     def calculatepar(self, hand, vuln, print_result=True):
-        tableDealPBN = dds.ddTableDealPBN()
-        table = dds.ddTableResults()
-        myTable = ctypes.pointer(table)
+        with self._lock:
+            tableDealPBN = dds.ddTableDealPBN()
+            table = dds.ddTableResults()
+            myTable = ctypes.pointer(table)
 
-        line = ctypes.create_string_buffer(80)
+            line = ctypes.create_string_buffer(80)
 
-        # Need dealer
-        tableDealPBN.cards = ("N:"+hand).encode('utf-8')
+            # Need dealer
+            tableDealPBN.cards = ("N:"+hand).encode('utf-8')
 
-        res = dds.CalcDDtablePBN(tableDealPBN, myTable)
+            res = dds.CalcDDtablePBN(tableDealPBN, myTable)
 
-        if res != 1:
-            error_message = dds.get_error_message(res)
-            sys.stderr.write(f"Error Code: {res}, Error Message: {error_message}, Hand {hand.encode('utf-8')}\n")
-            raise Exception(error_message)
+            if res != 1:
+                error_message = dds.get_error_message(res)
+                sys.stderr.write(f"Error Code: {res}, Error Message: {error_message}, Hand {hand.encode('utf-8')}\n")
+                raise Exception(error_message)
 
-        pres = dds.parResults()
+            pres = dds.parResults()
 
-        # vulnerable 
-        # 0: None 1: Both 2: NS 3: EW 
-        v = 0
-        if vuln[0]: v = 2
-        if vuln[1]: v = 3
-        if vuln[0] and vuln[1]: v = 1
+            # vulnerable 
+            # 0: None 1: Both 2: NS 3: EW 
+            v = 0
+            if vuln[0]: v = 2
+            if vuln[1]: v = 3
+            if vuln[0] and vuln[1]: v = 1
 
-        res = dds.Par(myTable, pres, v)
+            res = dds.Par(myTable, pres, v)
 
-        if res != 1:
-            error_message = dds.get_error_message(res)
-            sys.stderr.write(f"{Fore.RED}Error Code: {res}, Error Message: {error_message} {hand.encode('utf-8')}{Style.RESET_ALL}")
-            return None
+            if res != 1:
+                error_message = dds.get_error_message(res)
+                sys.stderr.write(f"{Fore.RED}Error Code: {res}, Error Message: {error_message} {hand.encode('utf-8')}{Style.RESET_ALL}")
+                return None
 
-        par = ctypes.pointer(pres)
+            par = ctypes.pointer(pres)
 
-        if print_result:
-            print("NS score: {}".format(par.contents.parScore[0].value.decode('utf-8')))
-            print("EW score: {}".format(par.contents.parScore[1].value.decode('utf-8')))
-            #print("NS list : {}".format(par.contents.parContractsString[0].value.decode('utf-8')))
-            #print("EW list : {}\n".format(par.contents.parContractsString[1].value.decode('utf-8')))
-        par = par.contents.parScore[0].value.decode('utf-8')
-        ns_score = par.split()[1]
-        return int(ns_score)
+            if print_result:
+                print("NS score: {}".format(par.contents.parScore[0].value.decode('utf-8')))
+                print("EW score: {}".format(par.contents.parScore[1].value.decode('utf-8')))
+                #print("NS list : {}".format(par.contents.parContractsString[0].value.decode('utf-8')))
+                #print("EW list : {}\n".format(par.contents.parContractsString[1].value.decode('utf-8')))
+            par = par.contents.parScore[0].value.decode('utf-8')
+            ns_score = par.split()[1]
+            return int(ns_score)
     
         
     # Solutions
@@ -98,61 +101,64 @@ class DDSolver:
     def solve_helper(self, strain_i, leader_i, current_trick, hands_pbn, solutions):
         card_rank = [0x4000, 0x2000, 0x1000, 0x0800, 0x0400, 0x0200, 0x0100, 0x0080, 0x0040, 0x0020, 0x0010, 0x0008, 0x0004]
 
-        self.bo.noOfBoards = min(dds.MAXNOOFBOARDS, len(hands_pbn))
+        with self._lock:
+            self.bo.noOfBoards = min(dds.MAXNOOFBOARDS, len(hands_pbn))
 
-        for handno in range(self.bo.noOfBoards):
-            self.bo.deals[handno].trump = (strain_i - 1) % 5
-            self.bo.deals[handno].first = leader_i
-
-            for i in range(3):
-                self.bo.deals[handno].currentTrickSuit[i] = 0
-                self.bo.deals[handno].currentTrickRank[i] = 0
-                if i < len(current_trick):
-                    self.bo.deals[handno].currentTrickSuit[i] = current_trick[i] // 13
-                    self.bo.deals[handno].currentTrickRank[i] = 14 - current_trick[i] % 13
-
-            self.bo.deals[handno].remainCards = hands_pbn[handno].encode('utf-8')
-
-            self.bo.target[handno] = -1
-            # Return all cards that can be legally played, with their scores in descending order.
-            self.bo.solutions[handno] = solutions
-            self.bo.mode[handno] = self.dds_mode
-
-        res = dds.SolveAllBoards(ctypes.pointer(self.bo), ctypes.pointer(self.solved))
-        if res != 1:
-            error_message = dds.get_error_message(res)
-            print(f"{Fore.RED}Error Code: {res}, Error Message: {error_message} {hands_pbn[0].encode('utf-8')} {current_trick} {leader_i}{Style.RESET_ALL}")
-            return None
-
-        if solutions == 1:
-            # Just return the maximum number of the side to play for each sample
-            card_results = {}
-            card_results["max"] = []
-            card_results["min"] = []
             for handno in range(self.bo.noOfBoards):
-                fut = ctypes.pointer(self.solved.solvedBoards[handno])
-                suit_i = fut.contents.suit[0]
-                card = suit_i * 13 + 14 - fut.contents.rank[0]
-                card_results["max"].append(fut.contents.score[0])
-                card_results["min"].append(fut.contents.score[fut.contents.cards-1])
+                self.bo.deals[handno].trump = (strain_i - 1) % 5
+                self.bo.deals[handno].first = leader_i
 
-        else:    
-            card_results = {}
-            for handno in range(self.bo.noOfBoards):
-                fut = ctypes.pointer(self.solved.solvedBoards[handno])
-                for i in range(fut.contents.cards):
-                    suit_i = fut.contents.suit[i]
-                    card = suit_i * 13 + 14 - fut.contents.rank[i]
-                    if card not in card_results:
-                        card_results[card] = []
-                    card_results[card].append(fut.contents.score[i])
-                    eq_cards_encoded = fut.contents.equals[i]
-                    for k, rank_code in enumerate(card_rank):
-                        if rank_code & eq_cards_encoded > 0:
-                            eq_card = suit_i * 13 + k
-                            if eq_card not in card_results:
-                                card_results[eq_card] = []
-                            card_results[eq_card].append(fut.contents.score[i])
+                for i in range(3):
+                    self.bo.deals[handno].currentTrickSuit[i] = 0
+                    self.bo.deals[handno].currentTrickRank[i] = 0
+                    if i < len(current_trick):
+                        self.bo.deals[handno].currentTrickSuit[i] = current_trick[i] // 13
+                        self.bo.deals[handno].currentTrickRank[i] = 14 - current_trick[i] % 13
+
+                self.bo.deals[handno].remainCards = hands_pbn[handno].encode('utf-8')
+
+                self.bo.target[handno] = -1
+                # Return all cards that can be legally played, with their scores in descending order.
+                self.bo.solutions[handno] = solutions
+                self.bo.mode[handno] = self.dds_mode
+
+            res = dds.SolveAllBoards(ctypes.pointer(self.bo), ctypes.pointer(self.solved))
+
+            if res != 1:
+                error_message = dds.get_error_message(res)
+                print(f"{Fore.RED}Error Code: {res}, Error Message: {error_message} {hands_pbn[0].encode('utf-8')} {current_trick} {leader_i}{Style.RESET_ALL}")
+                return None
+
+            if solutions == 1:
+                # Just return the maximum number of the side to play for each sample
+                card_results = {}
+                card_results["max"] = []
+                card_results["min"] = []
+                for handno in range(self.bo.noOfBoards):
+                    fut = ctypes.pointer(self.solved.solvedBoards[handno])
+                    suit_i = fut.contents.suit[0]
+                    card = suit_i * 13 + 14 - fut.contents.rank[0]
+                    card_results["max"].append(fut.contents.score[0])
+                    card_results["min"].append(fut.contents.score[fut.contents.cards-1])
+
+            else:    
+                card_results = {}
+                for handno in range(self.bo.noOfBoards):
+                    fut = ctypes.pointer(self.solved.solvedBoards[handno])
+                    for i in range(fut.contents.cards):
+                        suit_i = fut.contents.suit[i]
+                        card = suit_i * 13 + 14 - fut.contents.rank[i]
+                        if card not in card_results:
+                            card_results[card] = []
+                        card_results[card].append(fut.contents.score[i])
+                        eq_cards_encoded = fut.contents.equals[i]
+                        for k, rank_code in enumerate(card_rank):
+                            if rank_code & eq_cards_encoded > 0:
+                                eq_card = suit_i * 13 + k
+                                if eq_card not in card_results:
+                                    card_results[eq_card] = []
+                                card_results[eq_card].append(fut.contents.score[i])
+
         return card_results
 
 
