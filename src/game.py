@@ -86,28 +86,50 @@ def get_execution_path():
     return os.getcwd()
 
 
-def random_deal_board(number=None):
-    deal_str = random_deal()
+def random_deal_board(number=None, rng=None):
+    if rng is None:
+        rng = np.random
+    deal_str = random_deal(rng)
     if number == None:
-        number = np.random.randint(1, 17)
-    auction_str = board_dealer_vuln(number)
+        number = rng.randint(1, 17)
+    auction_str = board_dealer_vuln(number, rng)
 
     return deal_str, auction_str
 
 
 class AsyncBotBid(botbidder.BotBid):
     async def async_bid(self, auction, alert=None):
-        return self.bid(auction)
+        return await asyncio.to_thread(self.bid, auction)
+
 
 class AsyncBotLead(botopeninglead.BotLead):
     async def async_opening_lead(self, auction, aceking):
-        return self.find_opening_lead(auction, aceking)
+        return await asyncio.to_thread(self.find_opening_lead, auction, aceking)
+
 
 class AsyncCardPlayer(botcardplayer.CardPlayer):
     async def async_play_card(self, trick_i, leader_i, current_trick52, tricks52, players_states, worlds, bidding_scores, quality, probability_of_occurence, shown_out_suits, play_status, lead_scores, play_scores, logical_play_scores, discard_scores, features):
-        return self.play_card(trick_i, leader_i, current_trick52, tricks52, players_states, worlds, bidding_scores, quality, probability_of_occurence, shown_out_suits, play_status, lead_scores, play_scores, logical_play_scores, discard_scores, features)
-    
-    
+        return await asyncio.to_thread(
+            self.play_card,
+            trick_i,
+            leader_i,
+            current_trick52,
+            tricks52,
+            players_states,
+            worlds,
+            bidding_scores,
+            quality,
+            probability_of_occurence,
+            shown_out_suits,
+            play_status,
+            lead_scores,
+            play_scores,
+            logical_play_scores,
+            discard_scores,
+            features,
+        )
+
+
 class Driver:
 
     def __init__(self, models, factory, sampler, seed, ddsolver, verbose):
@@ -182,10 +204,13 @@ class Driver:
         self.parscore = 0
 
         # Now you can use hash_integer as a seed
-        hash_integer = calculate_seed(deal_str)
+        self.hash_integer = calculate_seed(deal_str)
         if self.verbose:
-            print("Setting seed (Full deal) =",hash_integer)
-        np.random.seed(hash_integer)
+            print("Setting seed (Full deal) =", self.hash_integer)
+        
+        # Avoid setting global np.random.seed here to support concurrency
+        # np.random.seed(self.hash_integer)
+
 
 
     async def run(self, t_start):
@@ -1055,7 +1080,7 @@ async def main():
     parser.add_argument("--boards", default="", help="Filename for configuration")
     parser.add_argument("--auto", type=str_to_bool, default=False, help="Continue without user confirmation. If a file is provided it will stop at end of file")
     parser.add_argument("--boardno", default=0, type=int, help="Board number to start from")
-    parser.add_argument("--config", default=f"{config_path}/config/default.conf", help="Filename for configuration")
+    parser.add_argument("--config", default="src/config/default.conf", help="Filename for configuration")
     parser.add_argument("--opponent", default="", help="Filename for configuration pf opponents")
     parser.add_argument("--playonly", type=str_to_bool, default=False, help="Just play, no bidding")
     parser.add_argument("--biddingonly", default="False", help="Just bidding, no play, can be True, NS or EW")
@@ -1343,10 +1368,14 @@ async def main():
 
         if biddingonly == "False":
             if paronly <= imps:
-                with shelve.open(f"{config_path}/{DB_NAME}") as db:
-                    deal = driver.to_dict()
-                    print(f"{datetime.datetime.now():%H:%M:%S} Saving Board: {driver.hands} in {config_path}/{DB_NAME}")
-                    db[uuid.uuid4().hex] = deal
+                from filelock import FileLock
+                db_path = f"{config_path}/{DB_NAME}"
+                lock = FileLock(db_path + ".lock")
+                with lock:
+                    with shelve.open(db_path) as db:
+                        deal = driver.to_dict()
+                        print(f"{datetime.datetime.now():%H:%M:%S} Saving Board: {driver.hands} in {config_path}/{DB_NAME}")
+                        db[uuid.uuid4().hex] = deal
 
         if outputpbn != "":
             if paronly <= imps:

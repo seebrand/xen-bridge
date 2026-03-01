@@ -14,10 +14,13 @@ print("Reading deals from: "+DB_NAME)
 if __name__ == '__main__':
 
     deals = []
-    with shelve.open(DB_NAME) as db:
-        deal_items = sorted(list(db.items()), key=lambda x: x[1]['timestamp'])
-        with open('log.js', 'w', encoding='utf-8') as file:  # Open the output file with UTF-8 encoding
-            file.write("var data = ")
+    from filelock import FileLock
+    lock = FileLock(DB_NAME + ".lock")
+    with lock:
+        with shelve.open(DB_NAME) as db:
+            deal_items = sorted(list(db.items()), key=lambda x: x[1]['timestamp'])
+            with open('log.js', 'w', encoding='utf-8') as file:  # Open the output file with UTF-8 encoding
+                file.write("var data = ")
             for deal_id, deal in deal_items:
                 deals.append(deal)
             file.write(json.dumps(deals))

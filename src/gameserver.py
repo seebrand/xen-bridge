@@ -41,10 +41,10 @@ from websockets.exceptions import ConnectionClosedOK, ConnectionClosedError
 from sample import Sample
 from urllib.parse import parse_qs, urlparse
 from pbn2ben import load
-
 from colorama import Fore, Back, Style, init
 import gc
 import psutil
+import uuid
 
 version = '0.8.7.4'
 init()
@@ -81,9 +81,24 @@ def get_execution_path():
     return os.getcwd()
 
 random = True
-#For some strange reason parameters parsed to the handler must be an array
-board_no = []
-board_no.append(0) 
+board_start_index = 0
+
+class BoardManager:
+    def __init__(self, boards, start_index=0):
+        self.boards = boards or []
+        self.index = start_index % len(self.boards) if self.boards else 0
+        self._lock = None
+
+    async def next_board(self):
+        if not self.boards:
+            raise RuntimeError("No preloaded boards available")
+        if self._lock is None:
+            self._lock = asyncio.Lock()
+        async with self._lock:
+            board = self.boards[self.index]
+            board_number = self.index + 1
+            self.index = (self.index + 1) % len(self.boards)
+        return board_number, board['deal'], board['auction']
 
 # Get the path to the config file
 config_path = get_execution_path()
@@ -91,7 +106,7 @@ config_path = get_execution_path()
 parser = argparse.ArgumentParser(description="Game server")
 parser.add_argument("--boards", default="", help="Filename for boards")
 parser.add_argument("--boardno", default=0, type=int, help="Board number to start from")
-parser.add_argument("--config", default=f"{config_path}/config/default.conf", help="Filename for configuration")
+parser.add_argument("--config", default=f"{config_path}/src/config/default.conf", help="Filename for configuration")
 parser.add_argument("--opponent", default="", help="Filename for configuration pf opponents")
 parser.add_argument("--verbose", type=str_to_bool, default=False, help="Output samples and other information during play")
 parser.add_argument("--port", type=int, default=4443, help="Port for appserver")
@@ -99,6 +114,7 @@ parser.add_argument("--auto", type=bool, default=False, help="BEN bids and plays
 parser.add_argument("--playonly", type=str_to_bool, default=False, help="Only play, no bidding")
 parser.add_argument("--matchpoint", type=str_to_bool, default=None, help="Playing match point")
 parser.add_argument("--seed", type=int, default=42, help="Seed for random")
+parser.add_argument("--max-concurrent", type=int, default=int(os.getenv("MAX_CONCURRENT_GAMES", 4)), help="Maximum concurrent games to run")
 
 args = parser.parse_args()
 
@@ -110,6 +126,7 @@ auto = args.auto
 play_only = args.playonly
 matchpoint = args.matchpoint
 seed = args.seed
+max_concurrent_games = max(1, args.max_concurrent)
 boards = []
 
 np.set_printoptions(precision=2, suppress=True, linewidth=200)
@@ -211,7 +228,6 @@ if args.boards:
     file_extension = os.path.splitext(filename)[1].lower()  
     if file_extension == '.ben':
         with open(filename, "r") as file:
-            board_no.append(0) 
             lines = file.readlines()  # 
             # Loop through the lines, grouping them into objects
             for i in range(0, len(lines), 2):
@@ -231,107 +247,117 @@ if args.boards:
 
 if args.boardno:
     print(f"Starting from {args.boardno}")
-    board_no[0] = args.boardno -1
+    board_start_index = max(args.boardno - 1, 0)
 
 if random:
     print("Playing random deals or deals from the client")
 
-def worker(driver):
-    print('worker', driver)
-    asyncio.new_event_loop().run_until_complete(driver.run())
+board_manager = None
+if not random and len(boards) > 0:
+    board_manager = BoardManager(boards, board_start_index)
 
+async def handler(websocket, board_manager, seed, concurrency_limiter):
+    session_id = uuid.uuid4().hex[:8]
+    print(f"{datetime.datetime.now():%Y-%m-%d %H:%M:%S} Got websocket connection ({session_id})")
 
-async def handler(websocket, board_no, seed):
-    print('{} Got websocket connection'.format(datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")))
+    async with concurrency_limiter:
+        import copy
+        local_models = copy.copy(models)
+        
+        # We will initialize dds per connection to avoid bottleneck on the single instance lock
+        from ddsolver import ddsolver
+        local_dds = ddsolver.DDSolver()
 
-    driver = game.Driver(models, human.WebsocketFactory(websocket, verbose), Sample.from_conf(configuration, verbose), seed, dds, verbose)
-    play_only = False
-    driver.human = [False, False, False, False]
-    parsed_url = urlparse(websocket.request.path)
-    query_params = parse_qs(parsed_url.query)
-    deal = None
-    N = query_params.get('N', [None])[0]
-    if N: driver.human[0] = True
-    E = query_params.get('E', [None])[0]
-    if E: driver.human[1] = True
-    S = query_params.get('S', [None])[0]
-    if S: driver.human[2] = True
-    W = query_params.get('W', [None])[0]
-    if W: driver.human[3] = True
-    H = query_params.get('H', [None])[0]
-    if H: driver.human_declare = True
-    name = query_params.get('name', [None])[0]
-    if name: driver.name = name
-    R = query_params.get('R', [None])[0]
-    if R: driver.rotate = True
-    M = query_params.get('M', [None])[0]
-    if M: 
-        models.matchpoint = True
-    else:
-         models.matchpoint = False
-    P = query_params.get('P', [None])[0]
-    if P == "5":
-        play_only = True
-    deal = query_params.get('deal', [None])[0]
-    board_no_query = query_params.get('board_no')
-    board_number = None
-    if board_no_query is not None and board_no_query[0] != "null" and board_no_query[0] != "None":
-        board_number = int(board_no_query[0]) 
-    else:
-        if not deal and not board_no[0] > 0:
-            board_number = np.random.randint(1, 1000)
-
-    # If deal provided in the URL
-    if deal:
-        if board_number == None:
-            board_number = np.random.randint(1, 1000)
-        np.random.seed(board_number)
-        split_values = deal[1:-1].replace("'","").split(',')
-        rdeal = tuple(value.strip() for value in split_values)
-        driver.set_deal(board_number, *rdeal, play_only)
-        print(f"Board: {board_number} {rdeal} {play_only}")
-    else: 
-        # If random
-        if random:
-            #Just take a random"
-            np.random.seed(board_number)
-            rdeal = game.random_deal_board(board_number)
-            # example of to use a fixed deal
-            # rdeal = ('AK64.8642.Q32.Q6 9.QT973.AT5.KJ94 QT532.J5.KJ974.7 J87.AK.86.AT8532', 'W None')
-            print(f"Board: {board_number} {rdeal}")
-            driver.set_deal(board_number, *rdeal, False)
+        driver = game.Driver(local_models, human.WebsocketFactory(websocket, verbose), Sample.from_conf(configuration, verbose), seed, local_dds, verbose)
+        play_only = False
+        driver.human = [False, False, False, False]
+        parsed_url = urlparse(websocket.request.path)
+        query_params = parse_qs(parsed_url.query)
+        deal = None
+        N = query_params.get('N', [None])[0]
+        if N: driver.human[0] = True
+        E = query_params.get('E', [None])[0]
+        if E: driver.human[1] = True
+        S = query_params.get('S', [None])[0]
+        if S: driver.human[2] = True
+        W = query_params.get('W', [None])[0]
+        if W: driver.human[3] = True
+        H = query_params.get('H', [None])[0]
+        if H: driver.human_declare = True
+        name = query_params.get('name', [None])[0]
+        if name: driver.name = name
+        R = query_params.get('R', [None])[0]
+        if R: driver.rotate = True
+        M = query_params.get('M', [None])[0]
+        if M: 
+            local_models.matchpoint = True
         else:
-            # Select the next from the provided inputfile
-            rdeal = boards[board_no[0]]['deal']
-            auction = boards[board_no[0]]['auction']
-            print(f"{Fore.LIGHTBLUE_EX}Board: {board_no[0]+1} {rdeal}{Fore.RESET}")
-            np.random.seed(board_no[0]+1)
-            driver.set_deal(board_no[0] + 1, rdeal, auction, play_only)
+             local_models.matchpoint = False
+        P = query_params.get('P', [None])[0]
+        if P == "5":
+            play_only = True
+        deal = query_params.get('deal', [None])[0]
+        board_no_query = query_params.get('board_no')
+        board_number = None
+        if board_no_query is not None and board_no_query[0] not in ("null", "None"):
+            board_number = int(board_no_query[0]) 
 
-    log_memory_usage()
-    try:
-        t_start = time.time()
-        await driver.run(t_start)
+        if deal:
+            if board_number is None:
+                board_number = np.random.randint(1, 1000)
+            rng = np.random.default_rng(board_number)
+            split_values = deal[1:-1].replace("'","").split(',')
+            rdeal = tuple(value.strip() for value in split_values)
+            driver.set_deal(board_number, *rdeal, play_only)
+            print(f"Board: {board_number} {rdeal} {play_only}")
+        else: 
+            if random:
+                if board_number is None:
+                    board_number = np.random.randint(1, 1000)
+                rng = np.random.default_rng(board_number)
+                rdeal = game.random_deal_board(board_number, rng)
+                print(f"Board: {board_number} {rdeal}")
+                driver.set_deal(board_number, *rdeal, False)
+            else:
+                if board_manager is None:
+                    raise RuntimeError("Board manager not initialized for sequential boards")
+                board_number, rdeal, auction = await board_manager.next_board()
+                print(f"{Fore.LIGHTBLUE_EX}Board: {board_number} {rdeal}{Fore.RESET}")
+                rng = np.random.default_rng(board_number)
+                driver.set_deal(board_number, rdeal, auction, play_only)
 
-        print(f'{Fore.CYAN}{datetime.datetime.now():%Y-%m-%d %H:%M:%S} Board played in {time.time() - t_start:0.1f} seconds.{Fore.RESET}')  
-        if not random and len(boards) > 0:
-            board_no[0] = (board_no[0] + 1) % len(boards)
-        gc.collect()
         log_memory_usage()
+        try:
+            t_start = time.time()
+            await driver.run(t_start)
 
-    except (ConnectionClosedOK, ConnectionClosedError, ConnectionAbortedError):
-        print('User left')
-    except ValueError as e:
-        print("Error in configuration - typical the models do not match the configuration.")
-        handle_exception(e)
-        sys.exit(1)
+            print(f'{Fore.CYAN}{datetime.datetime.now():%Y-%m-%d %H:%M:%S} ({session_id}) Board played in {time.time() - t_start:0.1f} seconds.{Fore.RESET}')  
+            
+            # Periodically collect garbage in a non-blocking way if needed, or rely on Python's automatic GC
+            # We remove the synchronous gc.collect() to avoid blocking the event loop
+            # log_memory_usage()
+
+        except (ConnectionClosedOK, ConnectionClosedError, ConnectionAbortedError):
+            print(f'User left ({session_id})')
+        except ValueError as e:
+            print("Error in configuration - typical the models do not match the configuration.")
+            handle_exception(e)
+            sys.exit(1)
 
 async def main():
     sys.stderr.write(f"{Fore.CYAN}{datetime.datetime.now():%Y-%m-%d %H:%M:%S} Listening on port: {port}{Fore.RESET}\n")
-    start_server = websockets.serve(functools.partial(handler, board_no=board_no, seed=seed), "0.0.0.0", port, 
+    concurrency_limiter = asyncio.Semaphore(max_concurrent_games)
+    handler_partial = functools.partial(
+        handler,
+        board_manager=board_manager,
+        seed=seed,
+        concurrency_limiter=concurrency_limiter
+    )
+    start_server = websockets.serve(handler_partial, "0.0.0.0", port, 
         ping_timeout=60,  # 60 seconds timeout for pings
         close_timeout=60  # 60 seconds timeout for closing the connection
         )
+
     try:
         await start_server
     except OSError as e:

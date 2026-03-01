@@ -412,138 +412,141 @@ def index():
 
 def read_deals(username=None,flag=0):
     import heapq
+    from filelock import FileLock
     deals = []
-    with shelve.open(DB_NAME) as db:
-        print('Items:',len(db))
-        # deal_items = sorted(list(db.items()), key=lambda x: x[1]['timestamp'], reverse=True)
-        if username == None or username.lower() == 'xen':
-            deal_items = sorted(list(db.items()), key=lambda x: x[1]['timestamp'], reverse=True)[:100]
-            # db_list = list(filter(lambda x: x[1]['player'] == 'johnhome', db.items()))
-            # deal_items = sorted(db_list, key=lambda x: x[1]['timestamp'], reverse=True)
-        elif flag ==0:
-           deal_items = sorted(list(filter(lambda x: x[1]['player']==username,db.items())), key=lambda x: x[1]['timestamp'], reverse=True)[:20]
-        elif flag ==1:
-           # deal_items = sorted(list(filter(lambda x: x[1]['opponents']=='XEN',db.items())), key=lambda x: x[1]['timestamp'], reverse=True)
-           deal_items = sorted(db.items(), key=lambda x: x[1]['timestamp'], reverse=True)[:50]
-           # deal_items = heapq.nlargest(20, db.items(), key=lambda x: x[1]['timestamp'])
-        for deal_id, deal in deal_items:
-            board_no_ref = ""
-            board_no_index = ""
-            if 'deal_user' in deal: deal_user = deal['deal_user']
-            else: deal_user = ""			
-            if 'feedback' in deal: feedback = deal['feedback']
-            else: feedback = ""
-            if 'quality' in deal: quality = deal['quality']
-            else: quality = 'ok'
-            if 'board_number' in deal and deal['board_number'] is not None:
-                board_no_ref = f"&board_number={deal['board_number']}"
-                board_no_index = f"Board:{deal['board_number']}"
-                board_number = deal['board_number']
-            else :
-                board_no_ref = f"&board_number=0"
-                board_no_index = f"Board:None"
-                board_number = 0				
-            vulnerable = C_NONE
-            if "vuln_ns" in deal:
-                if (deal["vuln_ns"]) and (deal["vuln_ew"]): vulnerable = C_BOTH
+    lock = FileLock(DB_NAME + ".lock")
+    with lock:
+        with shelve.open(DB_NAME) as db:
+            print('Items:',len(db))
+            # deal_items = sorted(list(db.items()), key=lambda x: x[1]['timestamp'], reverse=True)
+            if username == None or username.lower() == 'xen':
+                deal_items = sorted(list(db.items()), key=lambda x: x[1]['timestamp'], reverse=True)[:100]
+                # db_list = list(filter(lambda x: x[1]['player'] == 'johnhome', db.items()))
+                # deal_items = sorted(db_list, key=lambda x: x[1]['timestamp'], reverse=True)
+            elif flag ==0:
+               deal_items = sorted(list(filter(lambda x: x[1]['player']==username,db.items())), key=lambda x: x[1]['timestamp'], reverse=True)[:20]
+            elif flag ==1:
+               # deal_items = sorted(list(filter(lambda x: x[1]['opponents']=='XEN',db.items())), key=lambda x: x[1]['timestamp'], reverse=True)
+               deal_items = sorted(db.items(), key=lambda x: x[1]['timestamp'], reverse=True)[:50]
+               # deal_items = heapq.nlargest(20, db.items(), key=lambda x: x[1]['timestamp'])
+            for deal_id, deal in deal_items:
+                board_no_ref = ""
+                board_no_index = ""
+                if 'deal_user' in deal: deal_user = deal['deal_user']
+                else: deal_user = ""			
+                if 'feedback' in deal: feedback = deal['feedback']
+                else: feedback = ""
+                if 'quality' in deal: quality = deal['quality']
+                else: quality = 'ok'
+                if 'board_number' in deal and deal['board_number'] is not None:
+                    board_no_ref = f"&board_number={deal['board_number']}"
+                    board_no_index = f"Board:{deal['board_number']}"
+                    board_number = deal['board_number']
+                else :
+                    board_no_ref = f"&board_number=0"
+                    board_no_index = f"Board:None"
+                    board_number = 0				
+                vulnerable = C_NONE
+                if "vuln_ns" in deal:
+                    if (deal["vuln_ns"]) and (deal["vuln_ew"]): vulnerable = C_BOTH
+                    else:
+                        if deal["vuln_ns"]: vulnerable = C_NS
+                        if deal["vuln_ew"]: vulnerable = C_WE
+                encoded_str_deal = encode_board(transform_hand(deal["hands"].split(" ")), deal["dealer"], vulnerable, int(deal['board_number']) if deal['board_number'] is not None else 0)                
+                # Trick winners are relative to declarer so 1 and 3 are declarer and dummy
+                if 'trick_winners' in deal and deal['trick_winners'] is not None:
+                    tricks = len(list(filter(lambda x: x % 2 == 1, deal['trick_winners'])))
                 else:
-                    if deal["vuln_ns"]: vulnerable = C_NS
-                    if deal["vuln_ew"]: vulnerable = C_WE
-            encoded_str_deal = encode_board(transform_hand(deal["hands"].split(" ")), deal["dealer"], vulnerable, int(deal['board_number']) if deal['board_number'] is not None else 0)                
-            # Trick winners are relative to declarer so 1 and 3 are declarer and dummy
-            if 'trick_winners' in deal and deal['trick_winners'] is not None:
-                tricks = len(list(filter(lambda x: x % 2 == 1, deal['trick_winners'])))
-            else:
-                tricks = 0
-
-            if 'claimed' in deal:
-                if 'claimedbydeclarer' in deal and deal['claimedbydeclarer']:
-                    tricks += deal['claimed']
+                    tricks = 0
+    
+                if 'claimed' in deal:
+                    if 'claimedbydeclarer' in deal and deal['claimedbydeclarer']:
+                        tricks += deal['claimed']
+                    else:
+                        tricks += 13 - len(deal['trick_winners'])-deal['claimed']
+                
+                # if "bidding_only" in deal and deal["bidding_only"]:
+                #     tricks = ""
+                if 'par_opponents' in deal: par_opponents = deal['par_opponents']
+                else: par_opponents = ""
+                if 'par_contract' in deal: par_contract = deal['par_contract']
+                else: par_contract = ""
+                if 'par_dealer' in deal: par_dealer = deal['par_dealer']
+                else: par_dealer = ""
+                # par_contract = par_contract
+                if 'par_score' in deal: par_score = deal['par_score']
+                else: par_score = ""
+                if 'imps' in deal: imps = deal['imps']
+                else: imps = ""
+                if 'contract_list' in deal: contract_list = deal['contract_list']
+                else: contract_list = ""
+    
+                if 'par_id' in deal: par_id = deal['par_id']
+                else: par_id = ""
+    
+                if 'bba' in deal: bba_self = deal['bba']
+                else: bba_self = ""
+                if 'score' in deal: score = deal['score']
+                else: score = ""
+                if 'system_flag' in deal: system_flag = deal['system_flag']
+                else: system_flag = ""
+    			
+    
+                dt_obj = datetime.datetime.fromtimestamp(deal['timestamp'])
+                deal_time = dt_obj.strftime("%Y-%m-%d %H:%M:%S")
+    
+                if 'contract' in deal and deal['contract'] is not None:
+                    deals.append({
+                        'board_no_index': board_no_index,
+                        'deal_id': deal_id,
+                        'board_no_ref': board_no_ref,
+                        'board_number': board_number,
+                        'contract': deal['contract'],
+                        'trick_winners_count': tricks,
+                        'player': deal['player'],
+                        'delete_url': f"/api/delete/deal/{deal_id}",
+                        'bba': encoded_str_deal,
+                        'deal_time': deal_time,
+                        'deal_user': deal_user,
+                        'par_id': par_id,
+                        'par_contract': par_contract,
+                        'par_score': par_score,
+                        'par_opponents': par_opponents,
+                        'score': score,
+                        'imps': imps,
+                        'contract_list': contract_list,
+                        'system_flag': system_flag,
+                        'bba_self': bba_self,
+    
+                        'feedback':feedback,
+                        'quality': quality
+                    })
                 else:
-                    tricks += 13 - len(deal['trick_winners'])-deal['claimed']
-            
-            # if "bidding_only" in deal and deal["bidding_only"]:
-            #     tricks = ""
-            if 'par_opponents' in deal: par_opponents = deal['par_opponents']
-            else: par_opponents = ""
-            if 'par_contract' in deal: par_contract = deal['par_contract']
-            else: par_contract = ""
-            if 'par_dealer' in deal: par_dealer = deal['par_dealer']
-            else: par_dealer = ""
-            # par_contract = par_contract
-            if 'par_score' in deal: par_score = deal['par_score']
-            else: par_score = ""
-            if 'imps' in deal: imps = deal['imps']
-            else: imps = ""
-            if 'contract_list' in deal: contract_list = deal['contract_list']
-            else: contract_list = ""
-
-            if 'par_id' in deal: par_id = deal['par_id']
-            else: par_id = ""
-
-            if 'bba' in deal: bba_self = deal['bba']
-            else: bba_self = ""
-            if 'score' in deal: score = deal['score']
-            else: score = ""
-            if 'system_flag' in deal: system_flag = deal['system_flag']
-            else: system_flag = ""
-			
-
-            dt_obj = datetime.datetime.fromtimestamp(deal['timestamp'])
-            deal_time = dt_obj.strftime("%Y-%m-%d %H:%M:%S")
-
-            if 'contract' in deal and deal['contract'] is not None:
-                deals.append({
-                    'board_no_index': board_no_index,
-                    'deal_id': deal_id,
-                    'board_no_ref': board_no_ref,
-                    'board_number': board_number,
-                    'contract': deal['contract'],
-                    'trick_winners_count': tricks,
-                    'player': deal['player'],
-                    'delete_url': f"/api/delete/deal/{deal_id}",
-                    'bba': encoded_str_deal,
-                    'deal_time': deal_time,
-                    'deal_user': deal_user,
-                    'par_id': par_id,
-                    'par_contract': par_contract,
-                    'par_score': par_score,
-                    'par_opponents': par_opponents,
-                    'score': score,
-                    'imps': imps,
-                    'contract_list': contract_list,
-                    'system_flag': system_flag,
-                    'bba_self': bba_self,
-
-                    'feedback':feedback,
-                    'quality': quality
-                })
-            else:
-                deals.append({
-                    'board_no_index': board_no_index,
-                    'deal_id': deal_id,
-                    'board_no_ref': board_no_ref,
-                    'board_number': board_number,
-                    'contract': "All Pass",
-                    'player': deal['player'],
-                    'trick_winners_count': tricks,
-                    'delete_url': f"/api/delete/deal/{deal_id}",
-                    'bba': encoded_str_deal,
-                    'deal_time': deal_time,
-                    'deal_user': deal_user,
-                    'par_id': par_id,
-                    'par_contract': par_contract,
-                    'par_score': par_score,
-                    'par_opponents': par_opponents,
-                    'score': score,
-                    'imps': imps,
-                    'contract_list': contract_list,
-                    'system_flag': system_flag,
-                    'bba_self': bba_self,
-
-                    'feedback':feedback,
-                    'quality': quality
-                })
+                    deals.append({
+                        'board_no_index': board_no_index,
+                        'deal_id': deal_id,
+                        'board_no_ref': board_no_ref,
+                        'board_number': board_number,
+                        'contract': "All Pass",
+                        'player': deal['player'],
+                        'trick_winners_count': tricks,
+                        'delete_url': f"/api/delete/deal/{deal_id}",
+                        'bba': encoded_str_deal,
+                        'deal_time': deal_time,
+                        'deal_user': deal_user,
+                        'par_id': par_id,
+                        'par_contract': par_contract,
+                        'par_score': par_score,
+                        'par_opponents': par_opponents,
+                        'score': score,
+                        'imps': imps,
+                        'contract_list': contract_list,
+                        'system_flag': system_flag,
+                        'bba_self': bba_self,
+    
+                        'feedback':feedback,
+                        'quality': quality
+                    })
     return deals
 
 # def read_deals():
@@ -650,9 +653,12 @@ def index():
 def deal_data(deal_id):
     print("Getting:", deal_id)
     try:
-        db = shelve.open(DB_NAME)
-        deal = db[deal_id]
-        db.close()
+        from filelock import FileLock
+        lock = FileLock(DB_NAME + ".lock")
+        with lock:
+            db = shelve.open(DB_NAME)
+            deal = db[deal_id]
+            db.close()
 
         return json.dumps(deal)
     except KeyError:
@@ -669,9 +675,12 @@ def delete_deal(deal_id):
         print("Port not valid")
         raise HTTPError(401, f"Not Auth {host}")
     try:
-        db = shelve.open(DB_NAME)
-        db.pop(deal_id)
-        db.close()
+        from filelock import FileLock
+        lock = FileLock(DB_NAME + ".lock")
+        with lock:
+            db = shelve.open(DB_NAME)
+            db.pop(deal_id)
+            db.close()
         print("Returning to home")
 
         # Get the referrer URL to redirect back to the same page
@@ -690,9 +699,12 @@ def delete_deal(deal_id):
 def save_deal():
     data_dict = request.json  # Get JSON data from the request body
     if data_dict:
-        db = shelve.open(DB_NAME)
-        db[uuid.uuid4().hex] = data_dict
-        db.close()
+        from filelock import FileLock
+        lock = FileLock(DB_NAME + ".lock")
+        with lock:
+            db = shelve.open(DB_NAME)
+            db[uuid.uuid4().hex] = data_dict
+            db.close()
         response.status = 200  # HTTP status code: 200 OK
         response.headers['Content-Type'] = 'application/json'  # Set response content type
         return json.dumps({'message': 'Deal saved successfully'})
